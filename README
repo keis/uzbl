@@ -162,7 +162,7 @@ The following commands are recognized:
 * `event <event_name> [event_details]`
    - send custom event
 * `request <request_name> [request_details]`
-   - send custom request (same idea as events, but to be processed by EM, not uzbl-core)
+   - send custom request (same idea as events, but will be logged and resent should uzbl reconnect to the EM)
 * `menu_add          <label>  = <uzbl command>`
 * `menu_link_add     <label>  = <uzbl command>`
 * `menu_image_add    <label>  = <uzbl command>`
@@ -182,6 +182,8 @@ The following commands are recognized:
    - open print dialog
 * `include <file>`
    - read contents of file and interpret commands
+* `replay_requests`
+   - send all request from the request log
 
 
 ### VARIABLES AND CONSTANTS
@@ -249,6 +251,7 @@ Besides the builtin variables you can also define your own ones and use them in 
   - `fantasy_font_family` = "Pterra"
   - `serif_font_family` = serif (example "DejaVu Serif")
   - `sans_serif_font_family` = sans (example "DejaVu Sans")
+  - `request_log_cap`: maximum size in bytes of request log
 
 
 * Constants (not dumpable or writeable):
@@ -487,6 +490,7 @@ Basically all events have this format:
   - `EVENT [uzbl_instance_name] FILE_INCLUDED /path/to/file`: when the include commands succesfully loads a file
   - `EVENT [uzbl_instance_name] PLUG_CREATED plug-id`: when uzbl-core is in xembed mode
   - `EVENT [uzbl_instance_name] BUILTINS command_list`: shows a list of all uzbl commands, whitespace separated, on startup
+  - `EVENT [uzbl_instance_name] WARNING description of warning`: Sent when a warning is issued to the user
 
 
 ### COMMAND LINE ARGUMENTS
