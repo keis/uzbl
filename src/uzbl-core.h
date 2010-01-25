@@ -54,6 +54,7 @@ typedef struct {
     GtkScrollbar*  scbar_h;   // (These are still hidden)
     GtkAdjustment* bar_v; // Information about document length
     GtkAdjustment* bar_h; // and scrolling position
+    int            scrollbars_visible;
     WebKitWebView* web_view;
     gchar*         main_title;
     gchar*         icon;
@@ -94,6 +95,7 @@ typedef struct {
     gchar*   keycmd;
     gchar*   searchtx;
     gboolean verbose;
+    gboolean events_stdout;
     GPtrArray *event_buffer;
     GList*   request_log;
     guint    request_log_size;
