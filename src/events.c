@@ -22,6 +22,8 @@ const char *event_table[LAST_EVENT] = {
      "REQUEST_STARTING" ,
      "KEY_PRESS"        ,
      "KEY_RELEASE"      ,
+     "MOD_PRESS"        ,
+     "MOD_RELEASE"      ,
      "COMMAND_EXECUTED" ,
      "LINK_HOVER"       ,
      "TITLE_CHANGED"    ,
@@ -167,7 +169,7 @@ send_event(int type, const gchar *details, const gchar *custom_event) {
 
 /* Transform gdk key events to our own events */
 void
-key_to_event(guint keyval, guint state, gint mode) {
+key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
     gchar ucs[7];
     gint ulen;
     guint32 ukval = gdk_keyval_to_unicode(keyval);
@@ -216,17 +218,19 @@ key_to_event(guint keyval, guint state, gint mode) {
         ucs[ulen] = 0;
 
         details = g_strconcat(modifiers->str, ucs, NULL);
-        send_event(mode == GDK_KEY_PRESS ? KEY_PRESS : KEY_RELEASE,
-                details, NULL);
     }
     /* send keysym for non-printable chars */
-    else {
+    else
         details = g_strconcat(modifiers->str, gdk_keyval_name(keyval), NULL);
-        send_event(mode == GDK_KEY_PRESS ? KEY_PRESS : KEY_RELEASE,
+
+    if(is_modifier)
+        send_event(mode == GDK_KEY_PRESS?MOD_PRESS:MOD_RELEASE,
                 details, NULL);
-    }
+    else
+        send_event(mode == GDK_KEY_PRESS?KEY_PRESS:KEY_RELEASE,
+                details, NULL);
+
 
     g_string_free(modifiers, TRUE);
     g_free(details);
-
 }
