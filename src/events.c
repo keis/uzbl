@@ -167,10 +167,45 @@ send_event(int type, const gchar *details, const gchar *custom_event) {
 
 /* Transform gdk key events to our own events */
 void
-key_to_event(guint keyval, gint mode) {
+key_to_event(guint keyval, guint state, gint mode) {
     gchar ucs[7];
     gint ulen;
     guint32 ukval = gdk_keyval_to_unicode(keyval);
+    GString *modifiers = g_string_new("");
+    gchar *details;
+
+    /* check modifier state*/
+    if(state & GDK_MODIFIER_MASK) {
+        if(state & GDK_SHIFT_MASK)
+            g_string_append(modifiers, "Shift|");
+        if(state & GDK_LOCK_MASK)
+            g_string_append(modifiers, "ScrollLock|");
+        if(state & GDK_CONTROL_MASK)
+            g_string_append(modifiers, "Ctrl|");
+        if(state & GDK_MOD1_MASK)
+            g_string_append(modifiers,"Mod1|");
+        if(state & GDK_MOD2_MASK)
+            g_string_append(modifiers,"Mod2|");
+        if(state & GDK_MOD3_MASK)
+            g_string_append(modifiers,"Mod3|");
+        if(state & GDK_MOD4_MASK)
+            g_string_append(modifiers,"Mod4|");
+        if(state & GDK_MOD5_MASK)
+            g_string_append(modifiers,"Mod5|");
+        if(state & GDK_BUTTON1_MASK)
+            g_string_append(modifiers,"Button1|");
+        if(state & GDK_BUTTON2_MASK)
+            g_string_append(modifiers,"Button2|");
+        if(state & GDK_BUTTON3_MASK)
+            g_string_append(modifiers,"Button3|");
+        if(state & GDK_BUTTON4_MASK)
+            g_string_append(modifiers,"Button4|");
+        if(state & GDK_BUTTON5_MASK)
+            g_string_append(modifiers,"Button5|");
+
+        if(modifiers->str[modifiers->len-1] == '|')
+            g_string_overwrite(modifiers, modifiers->len-1, " ");
+    }
 
     /* check for printable unicode char */
     /* TODO: Pass the keyvals through a GtkIMContext so that
@@ -180,13 +215,18 @@ key_to_event(guint keyval, gint mode) {
         ulen = g_unichar_to_utf8(ukval, ucs);
         ucs[ulen] = 0;
 
+        details = g_strconcat(modifiers->str, ucs, NULL);
         send_event(mode == GDK_KEY_PRESS ? KEY_PRESS : KEY_RELEASE,
-                ucs, NULL);
+                details, NULL);
     }
     /* send keysym for non-printable chars */
     else {
+        details = g_strconcat(modifiers->str, gdk_keyval_name(keyval), NULL);
         send_event(mode == GDK_KEY_PRESS ? KEY_PRESS : KEY_RELEASE,
-                gdk_keyval_name(keyval), NULL);
+                details, NULL);
     }
+
+    g_string_free(modifiers, TRUE);
+    g_free(details);
 
 }

@@ -541,7 +541,7 @@ key_press_cb (GtkWidget* window, GdkEventKey* event) {
     (void) window;
 
     if(event->type == GDK_KEY_PRESS)
-        key_to_event(event->keyval, GDK_KEY_PRESS);
+        key_to_event(event->keyval, event->is_modifier?0:event->state, GDK_KEY_PRESS);
 
     return uzbl.behave.forward_keys ? FALSE : TRUE;
 }
@@ -551,7 +551,7 @@ key_release_cb (GtkWidget* window, GdkEventKey* event) {
     (void) window;
 
     if(event->type == GDK_KEY_RELEASE)
-        key_to_event(event->keyval, GDK_KEY_RELEASE);
+        key_to_event(event->keyval, event->is_modifier?0:event->state, GDK_KEY_RELEASE);
 
     return uzbl.behave.forward_keys ? FALSE : TRUE;
 }

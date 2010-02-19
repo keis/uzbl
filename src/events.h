@@ -41,6 +41,6 @@ void
 send_event(int type, const gchar *details, const gchar *custom_event);
 
 void
-key_to_event(guint keyval, gint mode);
+key_to_event(guint keyval, guint state, int mode);
 
 #endif
