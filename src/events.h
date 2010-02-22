@@ -42,10 +42,9 @@ void
 send_event(int type, const gchar *details, const gchar *custom_event);
 
 void
-<<<<<<< HEAD
-key_to_event(guint keyval, guint state, int mode);
+key_to_event(guint keyval, guint state, guint is_modifier, int mode);
+
+gchar *
+get_modifier_mask(guint state);
 
 #endif
-=======
-key_to_event(guint keyval, guint state, guint is_modifier, int mode);
->>>>>>> added MOD_PRESS/RELEASE events that denote X modifier keys

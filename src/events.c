@@ -167,16 +167,10 @@ send_event(int type, const gchar *details, const gchar *custom_event) {
     }
 }
 
-/* Transform gdk key events to our own events */
-void
-key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
-    gchar ucs[7];
-    gint ulen;
-    guint32 ukval = gdk_keyval_to_unicode(keyval);
+gchar *
+get_modifier_mask(guint state) {
     GString *modifiers = g_string_new("");
-    gchar *details;
 
-    /* check modifier state*/
     if(state & GDK_MODIFIER_MASK) {
         if(state & GDK_SHIFT_MASK)
             g_string_append(modifiers, "Shift|");
@@ -209,6 +203,21 @@ key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
             g_string_overwrite(modifiers, modifiers->len-1, " ");
     }
 
+    return g_string_free(modifiers, FALSE);
+}
+
+/* Transform gdk key events to our own events */
+void
+key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
+    gchar ucs[7];
+    gint ulen;
+    guint32 ukval = gdk_keyval_to_unicode(keyval);
+    gchar *modifiers = NULL;
+    gchar *details;
+
+    /* check modifier state*/
+    modifiers = get_modifier_mask(state);
+
     /* check for printable unicode char */
     /* TODO: Pass the keyvals through a GtkIMContext so that
      *       we also get combining chars right
@@ -217,11 +226,11 @@ key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
         ulen = g_unichar_to_utf8(ukval, ucs);
         ucs[ulen] = 0;
 
-        details = g_strconcat(modifiers->str, ucs, NULL);
+        details = g_strconcat(modifiers, ucs, NULL);
     }
     /* send keysym for non-printable chars */
     else
-        details = g_strconcat(modifiers->str, gdk_keyval_name(keyval), NULL);
+        details = g_strconcat(modifiers, gdk_keyval_name(keyval), NULL);
 
     if(is_modifier)
         send_event(mode == GDK_KEY_PRESS?MOD_PRESS:MOD_RELEASE,
@@ -230,7 +239,6 @@ key_to_event(guint keyval, guint state, guint is_modifier, gint mode) {
         send_event(mode == GDK_KEY_PRESS?KEY_PRESS:KEY_RELEASE,
                 details, NULL);
 
-
-    g_string_free(modifiers, TRUE);
+    g_free(modifiers);
     g_free(details);
 }
