@@ -19,6 +19,7 @@ const char *event_table[LAST_EVENT] = {
      "LOAD_COMMIT"      ,
      "LOAD_FINISH"      ,
      "LOAD_ERROR"       ,
+     "REQUEST_STARTING" ,
      "KEY_PRESS"        ,
      "KEY_RELEASE"      ,
      "DOWNLOAD_REQUEST" ,
@@ -44,7 +45,8 @@ const char *event_table[LAST_EVENT] = {
      "PLUG_CREATED"     ,
      "COMMAND_ERROR"    ,
      "BUILTINS"         ,
-     "WARNING"
+     "WARNING"          ,
+     "PTR_MOVE"
 };
 
 void
