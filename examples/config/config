@@ -2,6 +2,7 @@
 # all settings are optional.  you can use uzbl without any config at all (but it won't do much)
 
 set prefix = /usr/local
+set request_log_cap = 8192
 
 # === Shortcuts / Aliases  ===================================================
 

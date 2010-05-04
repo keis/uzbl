@@ -2659,6 +2659,7 @@ initialize(int argc, char *argv[]) {
 
     uzbl.state.request_log = NULL;
     uzbl.state.request_log_size = 0;
+    uzbl.state.request_log_cap = 0;
 
     uzbl.info.webkit_major = webkit_major_version();
     uzbl.info.webkit_minor = webkit_minor_version();
