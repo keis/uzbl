@@ -1,5 +1,5 @@
-/* 
- ** Uzbl event routines 
+/*
+ ** Uzbl event routines
  ** (c) 2009 by Robert Manea
 */
 
@@ -85,7 +85,7 @@ send_event_socket(GString *msg) {
                                 tmp->str, tmp->len,
                                 &len, &error);
 
-                        if (ret == G_IO_STATUS_ERROR) 
+                        if (ret == G_IO_STATUS_ERROR)
                             g_warning ("Error sending event to socket: %s", error->message);
                         else
                             g_io_channel_flush(gio, &error);
@@ -206,4 +206,3 @@ key_to_event(guint keyval, gint mode) {
     }
 
 }
-
