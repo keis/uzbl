@@ -1821,6 +1821,7 @@ reconnect_unix (gpointer userdata) {
         }
         if (uzbl.state.verbose)
             g_print ("connected to \"%s\"\n", local.sun_path);
+        send_event(INSTANCE_START, uzbl.info.pid_str, NULL);
         replay_requests (NULL, NULL, NULL);
 
         return FALSE; // done
