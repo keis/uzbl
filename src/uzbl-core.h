@@ -40,6 +40,8 @@
 #include <sys/ioctl.h>
 #include <assert.h>
 
+#include "cookie-jar.h"
+
 #define LENGTH(x) (sizeof x / sizeof x[0])
 
 /* gui elements */
@@ -107,8 +109,8 @@ typedef struct {
 
 /* networking */
 typedef struct {
-    SoupSession *soup_session;
-    SoupCookieJar *soup_cookie_jar;
+    SoupSession   *soup_session;
+    UzblCookieJar *soup_cookie_jar;
     SoupLogger *soup_logger;
     char *proxy_url;
     char *useragent;
@@ -147,6 +149,7 @@ typedef struct {
     guint    minimum_font_size;
     gfloat   zoom_level;
     gboolean zoom_type;
+    guint    enable_pagecache;
     guint    disable_plugins;
     guint    disable_scripts;
     guint    autoload_img;
@@ -208,12 +211,6 @@ extern UzblCore uzbl;
 
 typedef void sigfunc(int);
 
-/* XDG Stuff */
-typedef struct {
-    gchar* environmental;
-    gchar* default_value;
-} XDG_Var;
-
 /* uzbl variables */
 enum ptr_type {TYPE_INT, TYPE_STR, TYPE_FLOAT};
 typedef struct {
@@ -232,14 +229,8 @@ typedef struct {
 char *
 itos(int val);
 
-char *
-str_replace (const char* search, const char* replace, const char* string);
-
 gchar*
 strfree(gchar *str);
-
-GArray*
-read_file_by_line (const gchar *path);
 
 gchar*
 parseenv (gchar* string);
@@ -265,9 +256,6 @@ print(WebKitWebView *page, GArray *argv, GString *result);
 void
 commands_hash(void);
 
-bool
-file_exists (const char * filename);
-
 void
 load_uri (WebKitWebView * web_view, GArray *argv, GString *result);
 
@@ -280,9 +268,6 @@ close_uzbl (WebKitWebView *page, GArray *argv, GString *result);
 gboolean
 run_command(const gchar *command, const guint npre,
             const gchar **args, const gboolean sync, char **output_stdout);
-
-void
-talk_to_socket(WebKitWebView *web_view, GArray *argv, GString *result);
 
 void
 spawn(WebKitWebView *web_view, GArray *argv, GString *result);
@@ -352,12 +337,6 @@ create_plug ();
 
 void
 run_handler (const gchar *act, const gchar *args);
-
-/*@null@*/ gchar*
-get_xdg_var (XDG_Var xdg);
-
-/*@null@*/ gchar*
-find_xdg_file (int xdg_type, const char* filename);
 
 void
 settings_init ();
@@ -480,6 +459,9 @@ hardcopy(WebKitWebView *page, GArray *argv, GString *result);
 
 void
 include(WebKitWebView *page, GArray *argv, GString *result);
+
+void
+show_inspector(WebKitWebView *page, GArray *argv, GString *result);
 
 void
 builtins();
