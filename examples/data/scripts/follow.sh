@@ -3,7 +3,7 @@
 # This script is just a wrapper around follow.js that lets us change uzbl's mode
 # after a link is selected.
 
-. "$UZBL_UTIL_DIR"/uzbl-args.sh
+shift 7
 
 # if socat is installed then we can change Uzbl's input mode once a link is
 # selected; otherwise we just select a link.

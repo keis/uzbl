@@ -136,6 +136,7 @@ typedef struct {
     gchar*   fantasy_font_family;
     gchar*   cursive_font_family;
     gchar*   scheme_handler;
+    gchar*   download_handler;
     gboolean show_status;
     gboolean forward_keys;
     gboolean status_top;
@@ -231,9 +232,6 @@ itos(int val);
 
 gchar*
 strfree(gchar *str);
-
-gchar*
-parseenv (gchar* string);
 
 void
 clean_up(void);
