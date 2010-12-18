@@ -301,6 +301,9 @@ class Uzbl(object):
         self.pid = None
         self.name = None
 
+        # Set socket to non-blocking mode
+        self.child_socket.setblocking(0)
+
         # Flag if the instance has raised the INSTANCE_START event.
         self.instance_start = False
 
@@ -353,7 +356,10 @@ class Uzbl(object):
         if opts.print_events:
             print ascii(u'%s<-- %s' % ('  ' * self._depth, msg))
 
-        self.child_socket.send(ascii("%s\n" % msg))
+        try:
+            self.child_socket.send(ascii("%s\n" % msg))
+        except:
+            self.logger.error("failed to send (%s)", msg, exc_info=True)
 
 
     def read(self):
@@ -367,7 +373,7 @@ class Uzbl(object):
                 return self.close()
 
         except:
-            self.logger.error(get_exc())
+            self.logger.error("failed to read", exc_info=True)
             return self.close()
 
         lines = (self._buffer + raw).split('\n')
