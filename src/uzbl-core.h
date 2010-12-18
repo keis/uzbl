@@ -304,6 +304,9 @@ create_stdin();
 init_socket(gchar *dir);
 
 gboolean
+connect_unix (struct sockaddr_un*, gboolean);
+
+gboolean
 control_socket(GIOChannel *chan);
 
 gboolean

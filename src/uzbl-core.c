@@ -1735,11 +1735,14 @@ control_socket(GIOChannel *chan) {
     return TRUE;
 }
 
+/**
+ * init_connect_socket
+ * Connects to all sockets specified in uzbl.state.connect_socket_names
+ */
 void
 init_connect_socket() {
     int sockfd, replay = 0;
     struct sockaddr_un local, * local_p;
-    GIOChannel *chan;
     gchar **name = NULL;
 
     if(!uzbl.comm.connect_chan)
@@ -1752,26 +1755,12 @@ init_connect_socket() {
         local.sun_family = AF_UNIX;
         strcpy (local.sun_path, *name);
 
-        if(!connect(sockfd, (struct sockaddr *) &local, sizeof(local))) {
-            if ((chan = g_io_channel_unix_new(sockfd))) {
-                g_io_channel_set_encoding(chan, NULL, NULL);
-                g_io_add_watch(chan, G_IO_IN|G_IO_HUP,
-                    (GIOFunc) control_client_socket,
-                    GUINT_TO_POINTER (SOCKET_RECONNECT));
-                g_ptr_array_add(uzbl.comm.connect_chan, (gpointer)chan);
-                replay++;
-            }
-            if (uzbl.state.verbose)
-                g_print ("connected to \"%s\"\n", *name);
-        } else {
-            if (uzbl.state.verbose)
-                g_print ("failed to connect to \"%s\"\n", *name);
-
+		if (!connect_unix (&local, TRUE)) {
             /* schedule for reconnection attempt every 5 seconds */
             local_p = g_new (struct sockaddr_un, 1);
             *local_p = local;
             g_timeout_add_seconds (5, reconnect_unix, (gpointer) local_p);
-        }
+		}
         name++;
     }
 
@@ -1780,36 +1769,58 @@ init_connect_socket() {
         send_event_socket(NULL);
 }
 
+/**
+ * connect_unix
+ * Connects to a unix socket and sets up a GIOChannel calling control_client_socket on updates
+ * the channel is appended to uzbl.comm.connect_chan
+ */
 gboolean
-reconnect_unix (gpointer userdata) {
+connect_unix (struct sockaddr_un* local, gboolean reconnect) {
     GIOChannel *chan;
     gint sockfd;
-    struct sockaddr_un local;
-    local = *(struct sockaddr_un*)userdata;
 
     sockfd = socket (AF_UNIX, SOCK_STREAM, 0);
 
-    if (!connect (sockfd, (struct sockaddr *) &local, sizeof (local))) {
-        if ((chan = g_io_channel_unix_new(sockfd))) {
-            g_io_channel_set_encoding(chan, NULL, NULL);
-            g_io_add_watch(chan, G_IO_IN|G_IO_HUP,
+    if (!connect (sockfd, (struct sockaddr *) local, sizeof (*local))) {
+        if ((chan = g_io_channel_unix_new (sockfd))) {
+            g_io_channel_set_encoding (chan, NULL, NULL);
+            g_io_add_watch (chan, G_IO_IN|G_IO_HUP,
                 (GIOFunc) control_client_socket,
-                GUINT_TO_POINTER (SOCKET_RECONNECT));
-            g_ptr_array_add(uzbl.comm.connect_chan, (gpointer)chan);
+                reconnect?GUINT_TO_POINTER (SOCKET_RECONNECT):NULL);
+            g_ptr_array_add (uzbl.comm.connect_chan, (gpointer)chan);
         }
         if (uzbl.state.verbose)
-            g_print ("connected to \"%s\"\n", local.sun_path);
-        send_event(INSTANCE_START, uzbl.info.pid_str, NULL);
-        replay_requests (NULL, NULL, NULL);
+            g_print ("connected to \"%s\"\n", local->sun_path);
 
-        return FALSE; // done
+        return TRUE;
     } else {
         if (uzbl.state.verbose)
-            g_print ("failed to connect to \"%s\"\n", local.sun_path);
-        return TRUE; // retry
+            g_print ("failed to connect to \"%s\"\n", local->sun_path);
+        return FALSE;
     }
 }
 
+/**
+ * reconnect_unix
+ * timeout callback that tries to reconnect to the socket in userdata until it succeeds
+ * resending INSTANCE_START and all requests when it does so
+ */
+gboolean
+reconnect_unix (gpointer userdata) {
+	if (connect_unix ((struct sockaddr_un*)userdata, TRUE)) {
+        send_event (INSTANCE_START, uzbl.info.pid_str, NULL);
+        replay_requests (NULL, NULL, NULL);
+		g_free (userdata);
+		return FALSE; // Done
+	} else
+		return TRUE; // Retry
+}
+
+/**
+ * reconnect_channel
+ * schedules the fd of the channel for reconnection.
+ * fails unless the fd is a unix socket
+ */
 void
 reconnect_channel(GIOChannel *chan) {
     gint sockfd, socktype;
