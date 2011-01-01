@@ -464,8 +464,9 @@ get_click_context() {
     if(!uzbl.state.last_button)
         return -1;
 
-    ht = webkit_web_view_get_hit_test_result(g->web_view, uzbl.state.last_button);
-    g_object_get(ht, "context", &context, NULL);
+    ht = webkit_web_view_get_hit_test_result (g->web_view, uzbl.state.last_button);
+    g_object_get (ht, "context", &context, NULL);
+	g_object_unref (ht);
 
     return (gint)context;
 }
@@ -587,9 +588,10 @@ struct {const char *key; CommandInfo value;} cmdlist[] =
     { "js",                             {run_js, TRUE}                  },
     { "script",                         {run_external_js, 0}            },
     { "toggle_status",                  {toggle_status_cb, 0}           },
-    { "spawn",                          {spawn, 0}                      },
+    { "spawn",                          {spawn_async, 0}                },
     { "sync_spawn",                     {spawn_sync, 0}                 }, // needed for cookie handler
-    { "sh",                             {spawn_sh, 0}                   },
+    { "sync_spawn_exec",                {spawn_sync_exec, 0}            }, // needed for load_cookies.sh :(
+    { "sh",                             {spawn_sh_async, 0}             },
     { "sync_sh",                        {spawn_sh_sync, 0}              }, // needed for cookie handler
     { "exit",                           {close_uzbl, 0}                 },
     { "search",                         {search_forward_text, TRUE}     },
@@ -618,7 +620,9 @@ struct {const char *key; CommandInfo value;} cmdlist[] =
     { "hardcopy",                       {hardcopy, TRUE}                },
     { "replay_requests",                {replay_requests, TRUE}         },
     { "include",                        {include, TRUE}                 },
-    { "show_inspector",                 {show_inspector, 0}             }
+    { "show_inspector",                 {show_inspector, 0}             },
+    { "add_cookie",                     {add_cookie, 0}                 },
+    { "delete_cookie",                  {delete_cookie, 0}              }
 };
 
 void
@@ -677,7 +681,7 @@ add_to_menu(GArray *argv, guint context) {
         g->menu_items = g_ptr_array_new();
 
     if(split[1])
-        item_cmd = g_strdup(split[1]);
+        item_cmd = split[1];
 
     if(split[0]) {
         m = malloc(sizeof(MenuItem));
@@ -687,8 +691,6 @@ add_to_menu(GArray *argv, guint context) {
         m->issep = FALSE;
         g_ptr_array_add(g->menu_items, m);
     }
-    else
-        g_free(item_cmd);
 
     g_strfreev(split);
 }
@@ -965,6 +967,57 @@ show_inspector(WebKitWebView *page, GArray *argv, GString *result) {
 }
 
 void
+add_cookie(WebKitWebView *page, GArray *argv, GString *result) {
+    (void) page; (void) result;
+    gchar *host, *path, *name, *value;
+    gboolean secure = 0;
+    SoupDate *expires = NULL;
+
+    if(argv->len != 6)
+        return;
+
+    // Parse with same syntax as ADD_COOKIE event
+    host = argv_idx (argv, 0);
+    path = argv_idx (argv, 1);
+    name = argv_idx (argv, 2);
+    value = argv_idx (argv, 3);
+    secure = strcmp (argv_idx (argv, 4), "https") == 0;
+    if (strlen (argv_idx (argv, 5)) != 0)
+        expires = soup_date_new_from_time_t (
+            strtoul (argv_idx (argv, 5), NULL, 10));
+
+    // Create new cookie
+    SoupCookie * cookie = soup_cookie_new (name, value, host, path, -1);
+    soup_cookie_set_secure (cookie, secure);
+    if (expires)
+        soup_cookie_set_expires (cookie, expires);
+
+    // Add cookie to jar
+    uzbl.net.soup_cookie_jar->in_manual_add = 1;
+    soup_cookie_jar_add_cookie (SOUP_COOKIE_JAR (uzbl.net.soup_cookie_jar), cookie);
+    uzbl.net.soup_cookie_jar->in_manual_add = 0;
+}
+
+void
+delete_cookie(WebKitWebView *page, GArray *argv, GString *result) {
+    (void) page; (void) result;
+
+    if(argv->len < 4)
+        return;
+
+    SoupCookie * cookie = soup_cookie_new (
+        argv_idx (argv, 2),
+        argv_idx (argv, 3),
+        argv_idx (argv, 0),
+        argv_idx (argv, 1),
+        0);
+
+    uzbl.net.soup_cookie_jar->in_manual_add = 1;
+    soup_cookie_jar_delete_cookie (SOUP_COOKIE_JAR (uzbl.net.soup_cookie_jar), cookie);
+    uzbl.net.soup_cookie_jar->in_manual_add = 0;
+}
+
+void
 act_dump_config() {
     dump_config();
 }
@@ -1219,30 +1272,19 @@ sharg_append(GArray *a, const gchar *str) {
     g_array_append_val(a, s);
 }
 
-// make sure that the args string you pass can properly be interpreted (eg properly escaped against whitespace, quotes etc)
+/* make sure that the args string you pass can properly be interpreted (eg
+ * properly escaped against whitespace, quotes etc) */
 gboolean
-run_command (const gchar *command, const guint npre, const gchar **args,
-             const gboolean sync, char **output_stdout) {
-   //command <uzbl conf> <uzbl pid> <uzbl win id> <uzbl fifo file> <uzbl socket file> [args]
+run_command (const gchar *command, const gchar **args, const gboolean sync,
+             char **output_stdout) {
     GError *err = NULL;
 
     GArray *a = g_array_new (TRUE, FALSE, sizeof(gchar*));
-    gchar *pid = itos(getpid());
-    gchar *xwin = itos(uzbl.xwin);
     guint i;
 
     sharg_append(a, command);
-    for (i = 0; i < npre; i++) /* add n args before the default vars */
-        sharg_append(a, args[i]);
-    sharg_append(a, uzbl.state.config_file);
-    sharg_append(a, pid);
-    sharg_append(a, xwin);
-    sharg_append(a, uzbl.comm.fifo_path);
-    sharg_append(a, uzbl.comm.socket_path);
-    sharg_append(a, uzbl.state.uri);
-    sharg_append(a, uzbl.gui.main_title);
 
-    for (i = npre; i < g_strv_length((gchar**)args); i++)
+    for (i = 0; i < g_strv_length((gchar**)args); i++)
         sharg_append(a, args[i]);
 
     gboolean result;
@@ -1273,15 +1315,13 @@ run_command (const gchar *command, const guint npre, const gchar **args,
         g_printerr("error on run_command: %s\n", err->message);
         g_error_free (err);
     }
-    g_free (pid);
-    g_free (xwin);
     g_array_free (a, TRUE);
     return result;
 }
 
 /*@null@*/ gchar**
 split_quoted(const gchar* src, const gboolean unquote) {
-    /* split on unquoted space, return array of strings;
+    /* split on unquoted space or tab, return array of strings;
        remove a layer of quotes and backslashes if unquote */
     if (!src) return NULL;
 
@@ -1302,7 +1342,7 @@ split_quoted(const gchar* src, const gboolean unquote) {
         else if ((*p == '\'') && unquote && !dq) sq = !sq;
         else if (*p == '\'' && !dq) { g_string_append_c(s, *p);
                                       sq = ! sq; }
-        else if ((*p == ' ') && !dq && !sq) {
+        else if ((*p == ' ' || *p == '\t') && !dq && !sq) {
             dup = g_strdup(s->str);
             g_array_append_val(a, dup);
             g_string_truncate(s, 0);
@@ -1317,75 +1357,83 @@ split_quoted(const gchar* src, const gboolean unquote) {
 }
 
 void
-spawn(WebKitWebView *web_view, GArray *argv, GString *result) {
-    (void)web_view; (void)result;
+spawn(GArray *argv, gboolean sync, gboolean exec) {
     gchar *path = NULL;
+    gchar *arg_car = argv_idx(argv, 0);
+    const gchar **arg_cdr = &g_array_index(argv, const gchar *, 1);
 
-    //TODO: allow more control over argument order so that users can have some arguments before the default ones from run_command, and some after
-    if (argv_idx(argv, 0) &&
-            ((path = find_existing_file(argv_idx(argv, 0)))) ) {
-        run_command(path, 0,
-                ((const gchar **) (argv->data + sizeof(gchar*))),
-                FALSE, NULL);
+    if (arg_car && (path = find_existing_file(arg_car))) {
+        if (uzbl.comm.sync_stdout)
+            uzbl.comm.sync_stdout = strfree(uzbl.comm.sync_stdout);
+        run_command(path, arg_cdr, sync, sync?&uzbl.comm.sync_stdout:NULL);
+        // run each line of output from the program as a command
+        if (sync && exec && uzbl.comm.sync_stdout) {
+            gchar *head = uzbl.comm.sync_stdout;
+            gchar *tail;
+            while ((tail = strchr (head, '\n'))) {
+                *tail = '\0';
+                parse_cmd_line(head, NULL);
+                head = tail + 1;
+            }
+        }
         g_free(path);
     }
+}
+
+void
+spawn_async(WebKitWebView *web_view, GArray *argv, GString *result) {
+    (void)web_view; (void)result;
+    spawn(argv, FALSE, FALSE);
 }
 
 void
 spawn_sync(WebKitWebView *web_view, GArray *argv, GString *result) {
     (void)web_view; (void)result;
-    gchar *path = NULL;
-
-    if (argv_idx(argv, 0) &&
-            ((path = find_existing_file(argv_idx(argv, 0)))) ) {
-        run_command(path, 0,
-                ((const gchar **) (argv->data + sizeof(gchar*))),
-                    TRUE, &uzbl.comm.sync_stdout);
-        g_free(path);
-    }
+    spawn(argv, TRUE, FALSE);
 }
 
 void
-spawn_sh(WebKitWebView *web_view, GArray *argv, GString *result) {
+spawn_sync_exec(WebKitWebView *web_view, GArray *argv, GString *result) {
     (void)web_view; (void)result;
+    spawn(argv, TRUE, TRUE);
+}
+
+void
+spawn_sh(GArray *argv, gboolean sync) {
     if (!uzbl.behave.shell_cmd) {
         g_printerr ("spawn_sh: shell_cmd is not set!\n");
         return;
     }
-
     guint i;
-    gchar *spacer = g_strdup("");
-    g_array_insert_val(argv, 1, spacer);
+
     gchar **cmd = split_quoted(uzbl.behave.shell_cmd, TRUE);
+    gchar *cmdname = g_strdup(cmd[0]);
+    g_array_insert_val(argv, 1, cmdname);
 
     for (i = 1; i < g_strv_length(cmd); i++)
         g_array_prepend_val(argv, cmd[i]);
 
-    if (cmd) run_command(cmd[0], g_strv_length(cmd) + 1, (const gchar **) argv->data, FALSE, NULL);
-    g_free (spacer);
+    if (cmd) {
+        if (uzbl.comm.sync_stdout)
+            uzbl.comm.sync_stdout = strfree(uzbl.comm.sync_stdout);
+
+        run_command(cmd[0], (const gchar **) argv->data,
+                    sync, sync?&uzbl.comm.sync_stdout:NULL);
+    }
+    g_free (cmdname);
     g_strfreev (cmd);
+}
+
+void
+spawn_sh_async(WebKitWebView *web_view, GArray *argv, GString *result) {
+    (void)web_view; (void)result;
+    spawn_sh(argv, FALSE);
 }
 
 void
 spawn_sh_sync(WebKitWebView *web_view, GArray *argv, GString *result) {
     (void)web_view; (void)result;
-    if (!uzbl.behave.shell_cmd) {
-        g_printerr ("spawn_sh_sync: shell_cmd is not set!\n");
-        return;
-    }
-
-    guint i;
-    gchar *spacer = g_strdup("");
-    g_array_insert_val(argv, 1, spacer);
-    gchar **cmd = split_quoted(uzbl.behave.shell_cmd, TRUE);
-
-    for (i = 1; i < g_strv_length(cmd); i++)
-        g_array_prepend_val(argv, cmd[i]);
-
-    if (cmd) run_command(cmd[0], g_strv_length(cmd) + 1, (const gchar **) argv->data,
-                         TRUE, &uzbl.comm.sync_stdout);
-    g_free (spacer);
-    g_strfreev (cmd);
+    spawn_sh(argv, TRUE);
 }
 
 void
@@ -1424,14 +1472,13 @@ parse_command(const char *cmd, const char *param, GString *result) {
                strcmp("request", cmd)) {
                 g_string_printf(tmp, "%s %s", cmd, param?param:"");
                 send_event(COMMAND_EXECUTED, tmp->str, NULL);
-                g_string_free(tmp, TRUE);
             }
     }
     else {
-        gchar *tmp = g_strdup_printf("%s %s", cmd, param?param:"");
-        send_event(COMMAND_ERROR, tmp, NULL);
-        g_free(tmp);
+		g_string_printf (tmp, "%s %s", cmd, param?param:"");
+        send_event(COMMAND_ERROR, tmp->str, NULL);
     }
+    g_string_free(tmp, TRUE);
 }
 
 
@@ -2352,6 +2399,27 @@ retrieve_geometry() {
     uzbl.gui.geometry = g_string_free(buf, FALSE);
 }
 
+void
+set_webview_scroll_adjustments() {
+#ifdef GTK3
+    gtk_scrollable_set_hadjustment (GTK_SCROLLABLE(uzbl.gui.web_view), uzbl.gui.bar_h);
+    gtk_scrollable_set_vadjustment (GTK_SCROLLABLE(uzbl.gui.web_view), uzbl.gui.bar_v);
+#else
+    gtk_widget_set_scroll_adjustments (GTK_WIDGET (uzbl.gui.web_view),
+      uzbl.gui.bar_h, uzbl.gui.bar_v);
+#endif
+
+    g_object_connect((GObject*)uzbl.gui.bar_v,
+      "signal::value-changed",  (GCallback)scroll_vert_cb,  NULL,
+      "signal::changed",        (GCallback)scroll_vert_cb,  NULL,
+      NULL);
+
+    g_object_connect((GObject*)uzbl.gui.bar_h,
+      "signal::value-changed",  (GCallback)scroll_horiz_cb, NULL,
+      "signal::changed",        (GCallback)scroll_horiz_cb, NULL,
+      NULL);
+}
+
 /* set up gtk, gobject, variable defaults and other things that tests and other
  * external applications need to do anyhow */
 void
@@ -2490,24 +2558,15 @@ main (int argc, char* argv[]) {
         uzbl.gui.main_window = create_window ();
         gtk_container_add (GTK_CONTAINER (uzbl.gui.main_window), uzbl.gui.vbox);
         gtk_widget_show_all (uzbl.gui.main_window);
-        uzbl.xwin = GDK_WINDOW_XID (GTK_WIDGET (uzbl.gui.main_window)->window);
+        uzbl.xwin = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (uzbl.gui.main_window)));
     }
 
     uzbl.gui.scbar_v = (GtkScrollbar*) gtk_vscrollbar_new (NULL);
     uzbl.gui.bar_v = gtk_range_get_adjustment((GtkRange*) uzbl.gui.scbar_v);
     uzbl.gui.scbar_h = (GtkScrollbar*) gtk_hscrollbar_new (NULL);
     uzbl.gui.bar_h = gtk_range_get_adjustment((GtkRange*) uzbl.gui.scbar_h);
-    gtk_widget_set_scroll_adjustments ((GtkWidget*) uzbl.gui.web_view, uzbl.gui.bar_h, uzbl.gui.bar_v);
 
-    g_object_connect((GObject*)uzbl.gui.bar_v,
-      "signal::value-changed",                        (GCallback)scroll_vert_cb,          NULL,
-      "signal::changed",                              (GCallback)scroll_vert_cb,          NULL,
-      NULL);
-
-    g_object_connect((GObject*)uzbl.gui.bar_h,
-      "signal::value-changed",                        (GCallback)scroll_horiz_cb,         NULL,
-      "signal::changed",                              (GCallback)scroll_horiz_cb,         NULL,
-      NULL);
+    set_webview_scroll_adjustments();
 
     gchar *xwin = g_strdup_printf("%d", (int)uzbl.xwin);
     g_setenv("UZBL_XID", xwin, TRUE);

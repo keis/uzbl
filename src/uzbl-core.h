@@ -264,20 +264,23 @@ void
 close_uzbl (WebKitWebView *page, GArray *argv, GString *result);
 
 gboolean
-run_command(const gchar *command, const guint npre,
-            const gchar **args, const gboolean sync, char **output_stdout);
+run_command(const gchar *command, const gchar **args, const gboolean sync,
+            char **output_stdout);
 
 void
-spawn(WebKitWebView *web_view, GArray *argv, GString *result);
+spawn_async(WebKitWebView *web_view, GArray *argv, GString *result);
 
 void
-spawn_sh(WebKitWebView *web_view, GArray *argv, GString *result);
+spawn_sh_async(WebKitWebView *web_view, GArray *argv, GString *result);
 
 void
 spawn_sync(WebKitWebView *web_view, GArray *argv, GString *result);
 
 void
 spawn_sh_sync(WebKitWebView *web_view, GArray *argv, GString *result);
+
+void
+spawn_sync_exec(WebKitWebView *web_view, GArray *argv, GString *result);
 
 void
 parse_command(const char *cmd, const char *param, GString *result);
@@ -405,6 +408,9 @@ void
 request(WebKitWebView *page, GArray *argv, GString *result);
 
 void
+set_webview_scroll_adjustments();
+
+void
 event(WebKitWebView *page, GArray *argv, GString *result);
 
 void
@@ -463,6 +469,12 @@ include(WebKitWebView *page, GArray *argv, GString *result);
 
 void
 show_inspector(WebKitWebView *page, GArray *argv, GString *result);
+
+void
+add_cookie(WebKitWebView *page, GArray *argv, GString *result);
+
+void
+delete_cookie(WebKitWebView *page, GArray *argv, GString *result);
 
 void
 builtins();

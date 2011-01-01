@@ -43,7 +43,6 @@ set scripts_dir      = @data_home/uzbl:@prefix/share/uzbl/examples/data:scripts
 
 # These handlers can't be moved to the new event system yet as we don't
 # support events that can wait for a response from a script.
-set cookie_handler      = talk_to_socket @cache_home/uzbl/cookie_daemon_socket
 set scheme_handler      = sync_spawn @scripts_dir/scheme.py
 set authentication_handler = sync_spawn @scripts_dir/auth.py
 set download_handler    = sync_spawn @scripts_dir/download.sh
@@ -51,7 +50,7 @@ set download_handler    = sync_spawn @scripts_dir/download.sh
 # === Dynamic event handlers =================================================
 
 # Open link in new window
-@on_event   NEW_WINDOW     sh 'uzbl-browser ${8:+-u "$8"}' %r
+@on_event   NEW_WINDOW     sh 'uzbl-browser ${1:+-u "$1"}' %r
 # Open in current window
 #@on_event   NEW_WINDOW     uri %s
 # Open in new tab
@@ -123,6 +122,10 @@ set progress.pending    =
 
 set useragent         = Uzbl (Webkit @{WEBKIT_MAJOR}.@{WEBKIT_MINOR}.@{WEBKIT_MICRO}) (@(+uname -sm)@ [@ARCH_UZBL]) (Commit @COMMIT)
 
+# === Configure cookie blacklist ========================================================
+# Drop google analytics tracking cookies
+#request BLACKLIST_COOKIE name '^__utm.$'
+
 # === Key binding configuration ==============================================
 # --- Internal modmapping and ignoring ---------------------------------------
 
@@ -184,7 +187,7 @@ set ebind     = @mode_bind global,-insert
 # --- Mouse bindings ---------------------------------------------------------
 
 # Middle click open in new window
-@bind  <Button2>  = sh 'if [ "$8" ]; then uzbl-browser -u "$8"; else echo "uri $(xclip -o | sed s/\\\@/%40/g)" > "$UZBL_FIFO"; fi' \@SELECTED_URI
+@bind  <Button2>  = sh 'if [ "$1" ]; then uzbl-browser -u "$1"; else echo "uri $(xclip -o | sed s/\\\@/%40/g)" > "$UZBL_FIFO"; fi' '\@SELECTED_URI'
 
 # --- Keyboard bindings ------------------------------------------------------
 
@@ -271,9 +274,9 @@ set ebind     = @mode_bind global,-insert
 
 # Yanking & pasting binds
 @cbind  yu  = sh 'echo -n "$UZBL_URI" | xclip'
-@cbind  yU  = sh 'echo -n $8 | xclip' \@SELECTED_URI
+@cbind  yU  = sh 'echo -n "$1" | xclip' \@SELECTED_URI
 @cbind  yy  = sh 'echo -n "$UZBL_TITLE" | xclip'
-@cbind  yY  = sh 'echo -n $8 | xclip' \@SELECTED_URI
+@cbind  yY  = sh 'echo -n "$1" | xclip' \@SELECTED_URI
 
 # Clone current window
 @cbind  c   = sh 'uzbl-browser -u "$UZBL_URI"'
@@ -392,6 +395,8 @@ set stack    = @mode_config stack
 set default_mode = command
 
 # === Post-load misc commands ================================================
+sync_spawn_exec @scripts_dir/load_cookies.sh
+sync_spawn_exec @scripts_dir/load_cookies.sh @data_home/uzbl/session-cookies.txt
 
 # Set the "home" page.
 set uri = uzbl.org/doesitwork/@COMMIT
