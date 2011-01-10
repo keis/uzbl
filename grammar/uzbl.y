@@ -1,6 +1,7 @@
 /* I can haz grammar? */
 
 /* should merge TEXT/ATOM/LITERAL when not separated by whitespace
+    -- done for ATOM + ATOM, and ATOM + TEXT
 spawn @scripts_dir/woop.py
 blah test"foo foo"
 */
@@ -60,6 +61,7 @@ ws          : WS                        { }
             | /* empty */               { }
 
 atom        : ATOM                      { $<text>$ = g_strdup($<text>1); }
+            | atom ATOM                 { $<text>$ = g_strdup_printf("%s%s", $<text>1, $<text>2); }
 ;
 
 /* should unescape string (and remove quotes?) */
@@ -68,6 +70,9 @@ literal     : LITERAL                   { $<text>$ = g_strdup($<text>1); }
 
 /* should unescape string */
 text        : TEXT                      { $<text>$ = g_strdup($<text>1); }
+            | text TEXT                 { $<text>$ = g_strdup_printf("%s%s", $<text>1, $<text>2); }
+            | atom text                 { $<text>$ = g_strdup_printf("%s%s", $<text>1, $<text>2); }
+            | text atom                 { $<text>$ = g_strdup_printf("%s%s", $<text>1, $<text>2); }
 ;
 
 /* simple name followed by 0 or more arguments */
@@ -79,15 +84,23 @@ command     : atom args                 {
                                         }
 ;
 
-/* group basic string arguments */
-arg         : atom                      { } /* shift/reduce conflict, but I think it's safe */
-            | text                      { }
-            | literal                   { }
-;
-
 args        : /* empty */               { $<arg>$ = NULL; }
             /* strings are used as is */
-            | args ws arg               {
+            | args WS atom              {
+                                            struct Argument * narg = g_malloc(sizeof(struct Argument));
+                                            narg->argument.str = $<text>3;
+                                            narg->type = ARG_STR;
+                                            narg->next = $<arg>1;
+                                            $<arg>$ = narg;
+                                        }
+            | args WS text              {
+                                            struct Argument * narg = g_malloc(sizeof(struct Argument));
+                                            narg->argument.str = $<text>3;
+                                            narg->type = ARG_STR;
+                                            narg->next = $<arg>1;
+                                            $<arg>$ = narg;
+                                        }
+            | args WS literal           {
                                             struct Argument * narg = g_malloc(sizeof(struct Argument));
                                             narg->argument.str = $<text>3;
                                             narg->type = ARG_STR;
@@ -97,7 +110,7 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* run a command use its output as the argument
              * could be ` or $( to be more shell like, but I like plain brackets better
              */
-            | args ws OPEN ws command ws CLOSE
+            | args WS OPEN ws command ws CLOSE
                                         {
                                             struct Argument * narg = g_malloc(sizeof(struct Argument));
                                             narg->argument.command = $<command>5;
@@ -108,7 +121,7 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* syntatic sugar for "(eval_js arg)"
              * assumes we will have a friendly eval_js command the returns the js-value
              */
-            | args ws EXPANDJS          {
+            | args WS EXPANDJS          {
                                             struct Argument * carg = g_malloc(sizeof(struct Argument));
                                             carg->argument.str = $<text>3;
                                             carg->type = ARG_STR;
@@ -127,7 +140,7 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* syntatic sugar for "(sync_sh arg)"
              * assumes we will have a friendly sync_sh that returns the captured output
             */
-            | args ws EXPANDSHELL       {
+            | args WS EXPANDSHELL       {
                                             struct Argument * carg = g_malloc(sizeof(struct Argument));
                                             carg->argument.str = $<text>3;
                                             carg->type = ARG_STR;
@@ -154,6 +167,7 @@ int yylex ();
 
 main()
 {
+    //yydebug = 1;
     yyparse();
 }
 
