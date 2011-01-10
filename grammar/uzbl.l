@@ -5,7 +5,6 @@
 	YY_BUFFER_STATE oldbuffer;
 	char * get_var(char * key) {
 		/* dummy vars */
-		char * var;
 		if(strcmp(key, "foo")==0)
 			return "set blah = (foo 'yadda yadda')";
 		if(strcmp(key, "bar")==0)
@@ -36,7 +35,7 @@ shexpand @\((\\.|[^\)])*\)@
 
 %%
 
-<*>[ ]+			{ /*return WS;*/ }
+<*>[ ]+			{ return WS; }
 <*>{atom}    	{ yylval.text = yytext; return ATOM; }
 <*>{text}    	{ yylval.text = yytext; return TEXT; }
 <*>{dbllit}  	{ yylval.text = yytext; return LITERAL; }

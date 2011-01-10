@@ -56,6 +56,9 @@ input       : /* empty */               { }
             | input NEWLINE             { g_print("GO\n"); }
 ;
 
+ws          : WS                        { }
+            | /* empty */               { }
+
 atom        : ATOM                      { $<text>$ = g_strdup($<text>1); }
 ;
 
@@ -84,9 +87,9 @@ arg         : atom                      { } /* shift/reduce conflict, but I thin
 
 args        : /* empty */               { $<arg>$ = NULL; }
             /* strings are used as is */
-            | args arg                  {
+            | args ws arg               {
                                             struct Argument * narg = g_malloc(sizeof(struct Argument));
-                                            narg->argument.str = $<text>2;
+                                            narg->argument.str = $<text>3;
                                             narg->type = ARG_STR;
                                             narg->next = $<arg>1;
                                             $<arg>$ = narg;
@@ -94,10 +97,10 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* run a command use its output as the argument
              * could be ` or $( to be more shell like, but I like plain brackets better
              */
-            | args OPEN command CLOSE
+            | args ws OPEN ws command ws CLOSE
                                         {
                                             struct Argument * narg = g_malloc(sizeof(struct Argument));
-                                            narg->argument.command = $<command>3;
+                                            narg->argument.command = $<command>5;
                                             narg->type = ARG_COMMAND;
                                             narg->next = $<arg>1;
                                             $<arg>$ = narg;
@@ -105,9 +108,9 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* syntatic sugar for "(eval_js arg)"
              * assumes we will have a friendly eval_js command the returns the js-value
              */
-            | args EXPANDJS             {
+            | args ws EXPANDJS          {
                                             struct Argument * carg = g_malloc(sizeof(struct Argument));
-                                            carg->argument.str = $<text>2;
+                                            carg->argument.str = $<text>3;
                                             carg->type = ARG_STR;
                                             carg->next = NULL;
 
@@ -124,9 +127,9 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* syntatic sugar for "(sync_sh arg)"
              * assumes we will have a friendly sync_sh that returns the captured output
             */
-            | args EXPANDSHELL          {
+            | args ws EXPANDSHELL       {
                                             struct Argument * carg = g_malloc(sizeof(struct Argument));
-                                            carg->argument.str = $<text>2;
+                                            carg->argument.str = $<text>3;
                                             carg->type = ARG_STR;
                                             carg->next = NULL;
 
