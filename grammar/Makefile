@@ -10,7 +10,7 @@ uzbl.tab.o: uzbl.tab.c
 	gcc -DYYDEBUG -c uzbl.tab.c $(shell pkg-config glib-2.0 --cflags)
 
 uzbl.tab.c uzbl.tab.h: uzbl.y
-	bison --defines uzbl.y
+	bison -v --defines uzbl.y
 
 lex.yy.c: uzbl.l
 	flex uzbl.l

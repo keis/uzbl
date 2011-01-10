@@ -53,7 +53,7 @@ struct Argument * reverse_arguments(struct Argument * head, struct Argument * ac
 input       : /* empty */               { }
             | input command             { dump_command($<command>2, 0); }
             /* "command1 ; command 2 ; command3" would replace current use of chain command */
-            | input SEMICOLON           { g_print("CHAIN\n"); }
+            | input SEMICOLON ws        { g_print("CHAIN\n"); }
             | input NEWLINE             { g_print("GO\n"); }
 ;
 
@@ -76,7 +76,7 @@ text        : TEXT                      { $<text>$ = g_strdup($<text>1); }
 ;
 
 /* simple name followed by 0 or more arguments */
-command     : atom args                 {
+command     : atom args ws              {
                                             struct Command * comm = g_malloc(sizeof(struct Command));
                                             comm->command = $<text>1;
                                             comm->args = reverse_arguments($<arg>2, 0);
@@ -110,7 +110,7 @@ args        : /* empty */               { $<arg>$ = NULL; }
             /* run a command use its output as the argument
              * could be ` or $( to be more shell like, but I like plain brackets better
              */
-            | args WS OPEN ws command ws CLOSE
+            | args WS OPEN ws command CLOSE
                                         {
                                             struct Argument * narg = g_malloc(sizeof(struct Argument));
                                             narg->argument.command = $<command>5;
