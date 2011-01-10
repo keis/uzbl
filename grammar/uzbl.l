@@ -3,6 +3,16 @@
 	#include "uzbl.tab.h"
 
 	YY_BUFFER_STATE oldbuffer;
+	char * get_var(char * key) {
+		/* dummy vars */
+		char * var;
+		if(strcmp(key, "foo")==0)
+			return "set blah = (foo 'yadda yadda')";
+		if(strcmp(key, "bar")==0)
+			return "request blah blah";
+		return "dummy";
+	}
+
 %}
 
 %x VAR
@@ -18,7 +28,8 @@ text (\\.|[^ ;\(\)\>\"\@\n])*
 dbllit \"(\\.|[^"])*\"
 sgllit \'(\\.|[^'])*\'
 
-var @[a-zA-Z_]+
+var @[a-zA-Z_\.]+
+crlyvar @\{[a-zA-Z_\.]+\}
 
 jsexpand @<(\\.|[^>])*>@
 shexpand @\((\\.|[^\)])*\)@
@@ -33,22 +44,24 @@ shexpand @\((\\.|[^\)])*\)@
 {jsexpand}      { yylval.text = yytext; return EXPANDJS; }
 {shexpand}      { yylval.text = yytext; return EXPANDSHELL; }
 {var} 		 	{
-					/* dummy vars */
-					char * key = yytext + 1;
-					char * var;
-					if(strcmp(key, "foo")==0)
-						var = "set blah = (foo 'yadda yadda')";
-					else if(strcmp(key, "bar")==0)
-						var = "request blah blah";
-					else
-						var = "dummy";
+					char * var = get_var(yytext + 1);
 
 					/* lex value with VAR start condition to avoid expanding further @-vars */
 					oldbuffer = YY_CURRENT_BUFFER;
 					yy_switch_to_buffer(yy_scan_string(var));
 					BEGIN(VAR);
 			 	}
+{crlyvar}       {
+					yytext[yyleng-1] = 0;
+					char * var = get_var(yytext + 2);
+
+					/* lex value with VAR start condition to avoid expanding further @{}-vars */
+					oldbuffer = YY_CURRENT_BUFFER;
+					yy_switch_to_buffer(yy_scan_string(var));
+					BEGIN(VAR);
+				}
 <VAR>{var}   	{ yylval.text = yytext; return TEXT; }
+<VAR>{crlyvar}  { yylval.text = yytext; return TEXT; }
 <VAR><<EOF>> 	{
 					/* return to original buffer when done lexing var */
 					yy_delete_buffer(YY_CURRENT_BUFFER);
