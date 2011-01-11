@@ -63,13 +63,15 @@ load_status_change_cb (WebKitWebView* web_view, GParamSpec param_spec) {
     WebKitLoadStatus status = webkit_web_view_get_load_status(web_view);
     switch(status) {
         case WEBKIT_LOAD_PROVISIONAL:
-            send_event(LOAD_START,  NULL, TYPE_STR, uzbl.state.uri ? uzbl.state.uri : "", NULL);
+            program_log("load start %s", uzbl.state.uri);
+            send_event(LOAD_START, NULL, TYPE_STR, uzbl.state.uri ? uzbl.state.uri : "", NULL);
             break;
         case WEBKIT_LOAD_COMMITTED:
             frame = webkit_web_view_get_main_frame(web_view);
             send_event(LOAD_COMMIT, NULL, TYPE_STR, webkit_web_frame_get_uri (frame), NULL);
             break;
         case WEBKIT_LOAD_FINISHED:
+            program_log("load finished %s", webkit_web_frame_get_uri(frame));
             send_event(LOAD_FINISH, NULL, TYPE_STR, uzbl.state.uri, NULL);
             break;
         case WEBKIT_LOAD_FIRST_VISUALLY_NON_EMPTY_LAYOUT:

@@ -80,7 +80,7 @@ test-uzbl-browser-sandbox: uzbl-browser
 	make DESTDIR=./sandbox RUN_PREFIX=`pwd`/sandbox/usr/local install-example-data
 	cp -np ./misc/env.sh ./sandbox/env.sh
 	-. ./sandbox/env.sh && uzbl-event-manager restart -avv
-	. ./sandbox/env.sh && uzbl-browser --uri http://www.uzbl.org --verbose
+	. ./sandbox/env.sh && strace -ttt -f -o /tmp/uzbl.strace uzbl-browser --uri http://www.uzbl.org --verbose
 	. ./sandbox/env.sh && uzbl-event-manager stop -ivv
 	make DESTDIR=./sandbox uninstall
 	rm -rf ./sandbox/usr

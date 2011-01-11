@@ -40,6 +40,23 @@
 #include "variables.h"
 #include "type.h"
 
+void
+program_log (const char *format, ...)
+{
+    va_list args;
+    char *formatted, *str;
+
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
+
+    str = g_strdup_printf ("MARK: %s: %s", g_get_prgname(), formatted);
+    g_free (formatted);
+
+    access (str, F_OK);
+    g_free (str);
+}
+
 UzblCore uzbl;
 
 /* commandline arguments (set initial values for the state variables) */
@@ -777,6 +794,7 @@ void
 create_scrolled_win() {
     GUI* g = &uzbl.gui;
 
+    program_log("new webview");
     g->web_view     = WEBKIT_WEB_VIEW(webkit_web_view_new());
     g->scrolled_win = gtk_scrolled_window_new(NULL, NULL);
 
@@ -848,6 +866,8 @@ settings_init () {
     Network* n = &uzbl.net;
     int      i;
 
+    program_log("settings init");
+    
     /* Load default config */
     for (i = 0; default_config[i].command != NULL; i++) {
         parse_cmd_line(default_config[i].command, NULL);
@@ -949,6 +969,8 @@ retrieve_geometry() {
  * external applications need to do anyhow */
 void
 initialize(int argc, char** argv) {
+    program_log("initialize");
+
     /* Initialize variables */
     uzbl.state.socket_id       = 0;
     uzbl.state.plug_mode       = FALSE;
@@ -984,7 +1006,6 @@ initialize(int argc, char** argv) {
 
     if (!g_thread_supported())
         g_thread_init(NULL);
-
 
     /* TODO: move the handler setup to event_buffer_timeout and disarm the
      * handler in empty_event_buffer? */
@@ -1042,6 +1063,7 @@ int
 main (int argc, char* argv[]) {
     initialize(argc, argv);
 
+    program_log("creating window");
     /* Embedded mode */
     if (uzbl.state.plug_mode) {
         uzbl.gui.plug = create_plug();
@@ -1067,6 +1089,7 @@ main (int argc, char* argv[]) {
 
         gtk_widget_grab_focus (GTK_WIDGET (uzbl.gui.web_view));
     }
+    program_log("window created");
 
     /* Scrolling */
     uzbl.gui.bar_h = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (uzbl.gui.scrolled_win));
@@ -1156,10 +1179,13 @@ main (int argc, char* argv[]) {
     }
 
 
+    program_log("entering main loop");
     gtk_main();
+    program_log("left main loop");
 
     /* Cleanup and exit*/
     clean_up();
+    program_log("done");
 
     return EXIT_SUCCESS;
 }

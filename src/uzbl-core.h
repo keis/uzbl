@@ -228,6 +228,7 @@ extern UzblCore uzbl; /* Main Uzbl object */
 typedef void sigfunc(int);
 
 /* Functions */
+void        program_log (const char *format, ...);
 void        clean_up(void);
 void        update_title(void);
 
