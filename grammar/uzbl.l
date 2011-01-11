@@ -17,6 +17,8 @@
 %x VAR
 %option noyywrap
 
+comment #.*$
+
 /* no nonsense string */
 atom [a-zA-Z_]+
 
@@ -36,6 +38,7 @@ shexpand @\((\\.|[^\)])*\)@
 %%
 
 <*>[ ]+			{ return WS; }
+<*>{comment}    { }
 <*>{atom}    	{ yylval.text = yytext; return ATOM; }
 <*>{text}    	{ yylval.text = yytext; return TEXT; }
 <*>{dbllit}  	{ yylval.text = yytext; return LITERAL; }
