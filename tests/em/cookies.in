@@ -1,0 +1,11 @@
+request WHITELIST_COOKIE domain foo
+request WHITELIST_COOKIE domain bar.org$
+request BLACKLIST_COOKIE name '^foo$' value 'bad'
+event ADD_COOKIE '.domain.org' '/' 'name' 'value' 'http' '1295378362'
+event ADD_COOKIE '.foo.org' '/' 'name' 'value' 'http' '1295378362'
+event ADD_COOKIE '.foo.com' '/' 'name' 'value' 'http' '1295378362'
+event ADD_COOKIE '.bar.org.domain.com' '/' 'name' 'value' 'http' '1295378362'
+event ADD_COOKIE '.bar.org' '/' 'name' 'value' 'http' '1295378362'
+event ADD_COOKIE '.bar.org' '/' 'foo' 'bad' 'http' '1295378362'
+event ADD_COOKIE '.bar.org' '/' 'foo' 'good' 'http' '1295378362'
+event ADD_COOKIE '.bar.org' '/' 'foobar' 'bad' 'http' '1295378362'

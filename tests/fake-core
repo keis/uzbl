@@ -1,0 +1,20 @@
+#!/bin/awk -f
+# impersonate uzbl-core good enough to run some tests on the event-manager
+
+BEGIN {
+	print "EVENT [007] INSTANCE_START 1234"
+}
+/^(event|request)/ {
+	printf("EVENT [007] ")
+	for (i=2; i<=NF; i++)
+		printf("%s ", $i)
+	printf("\n")
+	fflush()
+}
+/^set/ {
+	printf("EVENT [007] VARIABLE_SET %s str ", $2)
+	for (i=4; i<=NF; i++)
+		printf("%s ", $i)
+	printf("\n")
+	fflush()
+}

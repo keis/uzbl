@@ -1,0 +1,4 @@
+dump_config_as_events
+delete_cookie '.domain.org' '/' 'name' 'value' 'http' '1295378362'
+delete_cookie '.bar.org.domain.com' '/' 'name' 'value' 'http' '1295378362'
+delete_cookie '.bar.org' '/' 'foo' 'bad' 'http' '1295378362'

@@ -1,0 +1,23 @@
+#!/bin/sh
+# runs all tests in the em directory, or a single test specifed as the first argument
+#
+# A test is run by connecting a fake-core reading the .in-file to the event-manager
+# and comparing the output from the event-manager with the .check-file
+
+socket=${XDG_CACHE_HOME:-$HOME/.cache}/uzbl/event_daemon
+if [ "$1" != "" ]; then
+	files="em/$1.in"
+else
+	files=`echo em/*.in`
+fi
+for f in $files; do
+	name=`echo $f | sed 's/em\/\(.*\)\.in/\1/'`
+	echo -n "$name... "
+	socat -v -T1 unix-connect:$socket exec:"./fake-core -- '$f' -" 2>&1 | sed '/^</,/^>/d;/^>/d' > "em/$name.out"
+	if diff "em/$name.out" "em/$name.check";
+	then
+		echo "ok"
+	else
+		echo "Failed!"
+	fi
+done
