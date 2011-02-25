@@ -74,6 +74,11 @@ mark_timestamp_group = 1
 mark_program_group = 2
 mark_log_group = 3
 
+exit_regex = re.compile(r'^(\d+) +(\d+\.\d+) +exit_group\((\d+)\) += +\?$')
+exit_pid_group = 1
+exit_timestamp_group = 2
+exit_status_group = 3
+
 # 3273  1141862703.998196 execve("/usr/bin/dbus-launch", ["/usr/bin/dbus-launch", "--sh-syntax", "--exit-with-session", "/usr/X11R6/bin/gnome"], [/* 61 vars */]) = 0
 # 3275  1141862704.003623 execve("/home/devel/bin/dbus-daemon", ["dbus-daemon", "--fork", "--print-pid", "8", "--print-address", "6", "--session"], [/* 61 vars */]) = -1 ENOENT (No such file or directory)
 complete_exec_regex = re.compile (r'^(\d+) +(\d+\.\d+) +execve\("(.*)", \[".*= (0|-1 ENOENT \(No such file or directory\))$')
@@ -117,15 +122,20 @@ class FirstMark(BaseMark):
 class ExecMark(BaseMark):
 #    colors = 0.75, 0.33, 0.33
     colors = (1.0, 0.0, 0.0)
-    def __init__(self, timestamp, log, is_complete, is_resumed):
+    def __init__(self, timestamp, log, pid, is_complete, is_resumed):
 #        if is_complete:
         text = 'execve: '
 #        elif is_resumed:
 #            text = 'execve resumed: '
 #        else:
 #            text = 'execve started: '
+        text = '%s%s (pid: %s)' % (text, os.path.basename(log), pid)
+        BaseMark.__init__(self, timestamp, text)
 
-        text = text + os.path.basename(log)
+class ExitMark(BaseMark):
+    colors = (0.7, 0.0, 0.0)
+    def __init__(self, timestamp, log, pid, status):
+        text = "exit(%s): %s (pid: %s)" % (status, os.path.basename(log), pid)
         BaseMark.__init__(self, timestamp, text)
 
 class Metrics:
@@ -153,17 +163,9 @@ palette = [
 
 class SyscallParser:
     def __init__ (self):
-        self.pending_execs = []
         self.syscalls = []
-
-    def search_pending_execs (self, search_pid):
-        n = len (self.pending_execs)
-        for i in range (n):
-            (pid, timestamp, command) = self.pending_execs[i]
-            if pid == search_pid:
-                return (i, timestamp, command)
-
-        return (None, None, None)
+        self.pending_execs = {}
+        self.running = {}
 
     def add_line (self, str):
         m = mark_regex.search (str)
@@ -189,6 +191,18 @@ class SyscallParser:
 
             return
 
+        m = exit_regex.search (str)
+        if m:
+            pid = m.group (exit_pid_group)
+            timestamp = float (m.group (exit_timestamp_group))
+            status = m.group (exit_status_group)
+
+            command = self.running.get(pid, '???')
+
+            self.syscalls.append (ExitMark(timestamp, command, pid, status))
+
+            return
+
         m = complete_exec_regex.search (str)
         if m:
             result = m.group (complete_exec_result_group)
@@ -196,7 +210,8 @@ class SyscallParser:
                 pid = m.group (complete_exec_pid_group)
                 timestamp = float (m.group (complete_exec_timestamp_group))
                 command = m.group (complete_exec_command_group)
-                self.syscalls.append (ExecMark (timestamp, command, True, False))
+                self.running[pid] = command
+                self.syscalls.append (ExecMark (timestamp, command, pid, True, False))
 
             return
 
@@ -205,7 +220,8 @@ class SyscallParser:
             pid = m.group (unfinished_exec_pid_group)
             timestamp = float (m.group (unfinished_exec_timestamp_group))
             command = m.group (unfinished_exec_command_group)
-            self.pending_execs.append ((pid, timestamp, command))
+            self.pending_execs[pid] = (timestamp, command)
+            self.running[pid] = command
 #            self.syscalls.append (ExecMark (timestamp, command, False, False))
             return
 
@@ -215,15 +231,16 @@ class SyscallParser:
             timestamp = float (m.group (resumed_exec_timestamp_group))
             result = m.group (resumed_exec_result_group)
 
-            (index, old_timestamp, command) = self.search_pending_execs (pid)
-            if index == None:
+            try:
+                old_timestamp, command = self.pending_execs[pid]
+            except:
                 print "Didn't find pid %s in pending_execs!" % pid
-                sys.exit (1)
+                sys.exit(1)
 
-            del self.pending_execs[index]
+            del self.pending_execs[pid]
 
             if result == success_result:
-                self.syscalls.append (ExecMark (timestamp, command, False, True))
+                self.syscalls.append (ExecMark (timestamp, command, pid, False, True))
 
 def parse_strace(filename):
     parser = SyscallParser ()
