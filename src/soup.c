@@ -2,6 +2,10 @@
 #include "util.h"
 #include "events.h"
 #include "type.h"
+#include "request.h"
+
+#define LIBSOUP_USE_UNSTABLE_REQUEST_API
+#include <libsoup/soup-requester.h>
 
 static void handle_authentication    (SoupSession *session,
                                       SoupMessage *msg,
@@ -45,6 +49,11 @@ uzbl_soup_init (SoupSession *session)
         session,
         SOUP_SESSION_FEATURE (uzbl.net.soup_cookie_jar)
     );
+
+    SoupSessionFeature *requester = SOUP_SESSION_FEATURE (soup_requester_new());
+    soup_session_add_feature (uzbl.net.soup_session, requester);
+    soup_session_feature_add_feature (requester, UZBL_TYPE_REQUEST);
+    g_object_unref (requester);
 
     g_signal_connect (
         session, "request-queued",
