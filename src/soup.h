@@ -12,6 +12,9 @@
  */
 void uzbl_soup_init (SoupSession *session);
 
+void add_scheme_handler (const gchar *scheme,
+                         const gchar *command);
+
 void authenticate   (const char  *authinfo,
                      const char  *username,
                      const char  *password);

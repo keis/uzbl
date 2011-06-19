@@ -71,6 +71,14 @@ uzbl_soup_init (SoupSession *session)
     );
 }
 
+void
+add_scheme_handler (const gchar *scheme, const gchar *command) {
+    uzbl_request_add_handler (scheme, command);
+    SoupSessionFeature *requester =
+        soup_session_get_feature (uzbl.net.soup_session, SOUP_TYPE_REQUESTER);
+    soup_session_feature_add_feature (requester, UZBL_TYPE_REQUEST);
+}
+
 void authenticate (const char *authinfo,
                    const char *username,
                    const char *password)

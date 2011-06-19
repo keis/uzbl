@@ -61,7 +61,8 @@ CommandInfo cmdlist[] =
     { "delete_cookie",                  delete_cookie, 0               },
     { "clear_cookies",                  clear_cookies, 0               },
     { "download",                       download, 0                    },
-    { "auth",                           auth, 0                        }
+    { "auth",                           auth, 0                        },
+    { "scheme",                         scheme, TRUE,                  }
 };
 
 void
@@ -603,4 +604,19 @@ auth(WebKitWebView *page, GArray *argv, GString *result) {
     password = argv_idx (argv, 2);
 
     authenticate (info, username, password);
+}
+
+void
+scheme(WebKitWebView *page, GArray *argv, GString *result) {
+    (void) page; (void) result;
+
+    if(!argv_idx(argv, 0))
+        return;
+
+    gchar **split = g_strsplit(argv_idx(argv, 0), "=", 2);
+    if (split[0] != NULL) {
+        gchar *value = split[1] ? g_strchug(split[1]) : " ";
+        add_scheme_handler (g_strstrip (split[0]), value);
+    }
+    g_strfreev(split);
 }
