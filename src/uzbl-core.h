@@ -254,6 +254,7 @@ void        handle_authentication (SoupSession *session,
 
 void        init_connect_socket();
 gboolean    remove_socket_from_array(GIOChannel *chan);
+void        add_scheme_handler (const gchar *scheme, const gchar *command);
 
 /* Window */
 void        retrieve_geometry();
