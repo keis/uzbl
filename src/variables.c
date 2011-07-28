@@ -191,6 +191,8 @@ cmd_load_uri() {
     while (*uri && isspace(*uri))
         uri++;
 
+    program_log("uri set %s", uri);
+
     /* evaluate javascript: URIs */
     if (!strncmp (uri, "javascript:", 11)) {
         eval_js(uzbl.gui.web_view, uri, NULL, "javascript:");

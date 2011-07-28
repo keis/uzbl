@@ -643,7 +643,9 @@ run_parsed_command(const CommandInfo *c, GArray *a, GString *result) {
         while ((p = argv_idx(a, i++)))
             g_string_append_printf(param, " '%s'", p);
 
-	/* might be destructive on array a */
+        program_log("command %s", c->key);
+
+        /* might be destructive on array a */
         c->function(uzbl.gui.web_view, a, result);
 
         send_event(COMMAND_EXECUTED, NULL,
@@ -867,7 +869,7 @@ settings_init () {
     int      i;
 
     program_log("settings init");
-    
+
     /* Load default config */
     for (i = 0; default_config[i].command != NULL; i++) {
         parse_cmd_line(default_config[i].command, NULL);
@@ -893,6 +895,7 @@ settings_init () {
         init_connect_socket();
 
     g_signal_connect(n->soup_session, "authenticate", G_CALLBACK(handle_authentication), NULL);
+    program_log("settings init done");
 }
 
 

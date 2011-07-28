@@ -71,6 +71,7 @@ load_status_change_cb (WebKitWebView* web_view, GParamSpec param_spec) {
             send_event(LOAD_COMMIT, NULL, TYPE_STR, webkit_web_frame_get_uri (frame), NULL);
             break;
         case WEBKIT_LOAD_FINISHED:
+            frame = webkit_web_view_get_main_frame(web_view);
             program_log("load finished %s", webkit_web_frame_get_uri(frame));
             send_event(LOAD_FINISH, NULL, TYPE_STR, uzbl.state.uri, NULL);
             break;
