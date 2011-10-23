@@ -302,7 +302,7 @@ class KeyCmd(PerInstancePlugin):
 
         self.add_modmap(*split)
 
-    def add_key_ignore(self, glob):
+    def add_key_ignore(self, args):
         '''Add an ignore definition.
 
         Examples:
@@ -312,10 +312,11 @@ class KeyCmd(PerInstancePlugin):
             ...
         '''
 
-        assert len(glob) > 1
+        args = splitquoted(args)
+        assert len(args) == 1
         ignores = self.ignores
 
-        glob = "<%s>" % glob.strip("<> ")
+        glob = "<%s>" % args[0].strip("<> ")
         restr = glob.replace('*', '[^\s]*')
         match = re.compile(restr).match
 

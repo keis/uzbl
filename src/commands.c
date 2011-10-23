@@ -39,8 +39,8 @@ CommandInfo cmdlist[] =
     { "dump_config_as_events",          act_dump_config_as_events, 0   },
     { "chain",                          chain, 0                       },
     { "print",                          print, TRUE                    },
-    { "event",                          event, TRUE                    },
-    { "request",                        event, TRUE                    },
+    { "event",                          event, FALSE                   },
+    { "request",                        event, FALSE                   },
     { "menu_add",                       menu_add, TRUE                 },
     { "menu_link_add",                  menu_add_link, TRUE            },
     { "menu_image_add",                 menu_add_image, TRUE           },
@@ -292,22 +292,13 @@ toggle_var(WebKitWebView *page, GArray *argv, GString *result) {
 void
 event(WebKitWebView *page, GArray *argv, GString *result) {
     (void) page; (void) result;
-    GString *event_name;
-    gchar **split = NULL;
 
     if(!argv_idx(argv, 0))
        return;
 
-    split = g_strsplit(argv_idx(argv, 0), " ", 2);
-    if(split[0])
-        event_name = g_string_ascii_up(g_string_new(split[0]));
-    else
-        return;
+    GArray args = {&g_array_index(argv, gchar*, 1) , argv->len };
 
-    send_event(0, event_name->str, TYPE_FORMATTEDSTR, split[1] ? split[1] : "", NULL);
-
-    g_string_free(event_name, TRUE);
-    g_strfreev(split);
+    send_event(0, argv_idx(argv, 0), TYPE_STR_ARRAY, &args, NULL);
 }
 
 void

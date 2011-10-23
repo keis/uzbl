@@ -372,8 +372,8 @@ class BindPlugin(PerInstancePlugin):
         modes = args[0].split(',')
         for i, g in enumerate(args[1:]):
             if g == '=':
-                glob = args.raw(1, i)
-                command = args.raw(i+2)
+                glob = args[1]
+                command = ' '.join(args[3:])
                 break
         else:
             raise ArgumentError('missing delimiter in bind section: %r' % args.raw())
