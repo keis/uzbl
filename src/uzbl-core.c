@@ -540,6 +540,9 @@ split_quoted(const gchar* src, const gboolean unquote) {
             dup = g_strdup(s->str);
             g_array_append_val(a, dup);
             g_string_truncate(s, 0);
+            // Skip extra whitespace
+            while(*(p+1) == ' ' || *(p+1) == '\t')
+                p++;
         } else g_string_append_c(s, *p);
     }
     dup = g_strdup(s->str);

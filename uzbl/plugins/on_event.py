@@ -92,9 +92,9 @@ class OnEventPlugin(PerInstancePlugin):
                 if arg == ']':
                     break
                 pattern.append(arg)
-            command = args.raw(3+i)
+            command = ' '.join(args[4+i:])
         else:
-            command = args.raw(1)
+            command = ' '.join(args[2:])
 
         assert event and command, 'missing on event command'
         self.on_event(event, pattern, command)

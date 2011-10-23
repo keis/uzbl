@@ -24,11 +24,11 @@ class ModePlugin(PerInstancePlugin):
         if the `<mode>` is the current mode.'''
 
         args = splitquoted(args)
-        assert len(args) >= 3, 'missing mode config args'
+        assert len(args) >= 3, 'missing mode config args: %r' % (args,)
         mode = args[0]
         key = args[1]
-        assert args[2] == '=', 'invalid mode config set syntax'
-        value = args.raw(3).strip()
+        assert args[2] == '=', 'invalid mode config set syntax: %r' % (args,)
+        value = ' '.join(args[3:])
 
         self.mode_config[mode][key] = value
         config = Config[self.uzbl]
