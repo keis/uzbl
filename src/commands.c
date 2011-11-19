@@ -296,9 +296,13 @@ event(WebKitWebView *page, GArray *argv, GString *result) {
     if(!argv_idx(argv, 0))
        return;
 
-    GArray args = {&g_array_index(argv, gchar*, 1) , argv->len };
-
-    send_event(0, argv_idx(argv, 0), TYPE_STR_ARRAY, &args, NULL);
+    Event *event = event_new (0, argv_idx (argv, 0));
+    const char *arg;
+    int i = 1;  // Skip the first argument which is the event name
+    while ((arg = argv_idx (argv, i++))) {
+        event_add_argument (event, TYPE_STR, arg);
+    }
+    event_send (event);
 }
 
 void

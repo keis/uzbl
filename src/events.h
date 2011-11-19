@@ -34,43 +34,61 @@ enum event_type {
 typedef struct _Event Event;
 struct _Event;
 
-void
-event_buffer_timeout(guint sec);
-
-void
-replay_buffered_events();
-
-/*
- * build event string
+/**
+ * Allocate a new event empty event of the given type
  */
 Event *
-format_event(int type, const gchar *custom_event, ...) G_GNUC_NULL_TERMINATED;
+event_new(int type, const gchar *custom_event);
 
-Event *
-vformat_event(int type, const gchar *custom_event, va_list vargs);
-
-/*
- * send a already formatted event string over the supported interfaces.
- * returned event string should be freed by `event_free`
+/**
+ * Add an argument to the event
  */
 void
-send_formatted_event(const Event *event);
+event_add_argument(Event *event, int type, ...);
 
-/*
- * frees a event string
+void
+event_add_atom_argument(Event *event, const gchar *arg);
+
+void
+event_add_string_argument(Event *event, const gchar *arg);
+
+void
+event_add_int_argument(Event *event, const int arg);
+
+void
+event_add_float_argument(Event *event, const double arg);
+
+/**
+ * Send the event over the supported interfaces
+ */
+void
+event_send(const Event *event);
+
+/**
+ * Frees a event string
  */
 void
 event_free(Event *event);
 
-/*
- * build event string and send over the supported interfaces
- * this is the same as calling `format_event` and then `send_formatted_event`
+/**
+ * Shorthand for constructing an event and sending over the supported
+ * interfaces.
  */
 void
 send_event(int type, const gchar *custom_event, ...) G_GNUC_NULL_TERMINATED;
 
 void
 vsend_event(int type, const gchar *custom_event, va_list vargs);
+
+/**
+ * Misc. functions related to events
+ */
+
+void
+event_buffer_timeout(guint sec);
+
+void
+replay_buffered_events();
 
 gchar *
 get_modifier_mask(guint state);
