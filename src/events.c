@@ -60,10 +60,175 @@ const char *event_table[LAST_EVENT] = {
      "BLUR_ELEMENT"
 };
 
-/* for now this is just a alias for GString */
+
+void
+send_event_stdout(GString *msg);
+
+void
+send_event_socket(GString *msg);
+
 struct _Event {
-    GString message;
+    int type;
+    const gchar *name;
+    GString *message;
+    GArray *arguments;
 };
+
+Event*
+event_new(int type, const gchar *custom_event) {
+    if (type >= LAST_EVENT)
+        return NULL;
+
+    Event *event = g_new (Event, 1);
+    event->type = type;
+    event->name = custom_event ? custom_event : event_table[type];
+
+    event->message = g_string_sized_new (512);
+    g_string_printf (event->message, "EVENT [%s] %s",
+        uzbl.state.instance_name, event->name);
+
+    event->arguments = g_array_new (true, false, sizeof (char*));
+
+    return event;
+}
+
+void
+event_free(Event *event) {
+    g_string_free (event->message, TRUE);
+    for (unsigned int i = 0; i < event->arguments->len; i++) {
+        g_free (g_array_index (event->arguments, char*, i));
+    }
+    g_array_free (event->arguments, true);
+    g_free (event);
+}
+
+
+void
+event_add_atom_argument(Event *event, const gchar *arg) {
+    char *dup = g_strdup (arg);
+    g_assert (valid_name (arg));
+
+    g_string_append_c(event->message, ' ');
+    g_array_append_val (event->arguments, dup);
+    g_string_append (event->message, arg);
+}
+
+void
+event_add_string_argument(Event *event, const gchar *arg) {
+    char *dup = g_strdup (arg);
+    g_array_append_val (event->arguments, dup);
+
+    g_string_append_c(event->message, ' ');
+    g_string_append_c (event->message, '\'');
+    append_escaped (event->message, arg);
+    g_string_append_c (event->message, '\'');
+}
+
+void
+event_add_int_argument(Event *event, const int arg) {
+    g_string_append_c(event->message, ' ');
+    char *end = event->message->str + event->message->len;
+    g_string_append_printf (event->message, "%d", arg);
+    char *dup = g_strdup (end);
+    g_array_append_val (event->arguments, dup);
+}
+
+void
+event_add_float_argument(Event *event, const double arg) {
+    g_string_append_c(event->message, ' ');
+    // Make sure the formatted double fits in the buffer
+    if (event->message->allocated_len - event->message->len < G_ASCII_DTOSTR_BUF_SIZE)
+        g_string_set_size (event->message, event->message->len + G_ASCII_DTOSTR_BUF_SIZE);
+
+    // format in C locale
+    char *tmp = g_ascii_formatd (
+        event->message->str + event->message->len,
+        event->message->allocated_len - event->message->len,
+        "%.2f", arg);
+    event->message->len += strlen(tmp);
+    char *dup = g_strdup (tmp);
+
+    g_array_append_val (event->arguments, dup);
+}
+
+void
+event_add_argument(Event *event, int type, ...) {
+    va_list vargs;
+    va_start (vargs, type);
+    switch (type) {
+    case TYPE_INT:
+        event_add_int_argument (event, va_arg (vargs, int));
+        break;
+
+    case TYPE_FLOAT:
+        event_add_float_argument (event, va_arg (vargs, double));
+        break;
+
+    case TYPE_STR:
+        event_add_string_argument (event, va_arg (vargs, char*));
+        break;
+
+    case TYPE_NAME:
+        event_add_atom_argument (event, va_arg (vargs, char*));
+        break;
+    }
+    va_end (vargs);
+}
+
+void
+event_send(const Event *event) {
+    // A event string is not supposed to contain newlines as it will be
+    // interpreted as two events
+    if (!strchr(event->message->str, '\n')) {
+        g_string_append_c(event->message, '\n');
+
+        if (uzbl.state.events_stdout)
+            send_event_stdout (event->message);
+        send_event_socket (event->message);
+    }
+}
+
+void
+vsend_event(int type, const gchar *custom_event, va_list vargs) {
+    Event *event = event_new (type, custom_event);
+    if (event == NULL)
+        return;
+
+    int next;
+    while ((next = va_arg (vargs, int)) != 0) {
+        switch (next) {
+        case TYPE_INT:
+            event_add_int_argument (event, va_arg (vargs, int));
+            break;
+
+        case TYPE_FLOAT:
+            // ‘float’ is promoted to ‘double’ when passed through ‘...’
+            event_add_float_argument (event, va_arg (vargs, double));
+            break;
+
+        case TYPE_STR:
+            event_add_string_argument (event, va_arg (vargs, char*));
+            break;
+
+        case TYPE_NAME:
+            event_add_atom_argument (event, va_arg (vargs, char*));
+            break;
+        }
+    }
+
+    event_send (event);
+    event_free (event);
+}
+
+void
+send_event(int type, const gchar *custom_event, ...) {
+    va_list vargs, vacopy;
+    va_start (vargs, custom_event);
+    va_copy (vacopy, vargs);
+    vsend_event (type, custom_event, vacopy);
+    va_end (vacopy);
+    va_end (vargs);
+}
 
 void
 event_buffer_timeout(guint sec) {
@@ -148,129 +313,6 @@ send_event_stdout(GString *msg) {
     fflush(stdout);
 }
 
-Event *
-vformat_event(int type, const gchar *custom_event, va_list vargs) {
-    if (type >= LAST_EVENT)
-        return NULL;
-
-    GString *event_message = g_string_sized_new (512);
-    const gchar *event = custom_event ? custom_event : event_table[type];
-    char* str;
-
-    int next;
-    g_string_printf (event_message, "EVENT [%s] %s",
-        uzbl.state.instance_name, event);
-
-    while ((next = va_arg (vargs, int)) != 0) {
-        g_string_append_c(event_message, ' ');
-        switch(next) {
-        case TYPE_INT:
-            g_string_append_printf (event_message, "%d", va_arg (vargs, int));
-            break;
-
-        case TYPE_STR:
-            /* a string that needs to be escaped */
-            g_string_append_c (event_message, '\'');
-            append_escaped (event_message, va_arg (vargs, char*));
-            g_string_append_c (event_message, '\'');
-            break;
-
-        case TYPE_FORMATTEDSTR:
-            /* a string has already been escaped */
-            g_string_append (event_message, va_arg (vargs, char*));
-            break;
-
-        case TYPE_STR_ARRAY:
-            ; /* gcc is acting up and requires a expression before the variables */
-            GArray *a = va_arg (vargs, GArray*);
-            const char *p;
-            int i = 0;
-            while ((p = argv_idx(a, i++))) {
-                if (i != 0)
-                    g_string_append_c(event_message, ' ');
-                g_string_append_c (event_message, '\'');
-                append_escaped (event_message, p);
-                g_string_append_c (event_message, '\'');
-            }
-            break;
-
-        case TYPE_NAME:
-            str = va_arg (vargs, char*);
-            g_assert (valid_name (str));
-            g_string_append (event_message, str);
-            break;
-
-        case TYPE_FLOAT:
-            // ‘float’ is promoted to ‘double’ when passed through ‘...’
-
-            // Make sure the formatted double fits in the buffer
-            if (event_message->allocated_len - event_message->len < G_ASCII_DTOSTR_BUF_SIZE)
-                g_string_set_size (event_message, event_message->len + G_ASCII_DTOSTR_BUF_SIZE);
-
-            // format in C locale
-            char *tmp = g_ascii_formatd (
-                event_message->str + event_message->len,
-                event_message->allocated_len - event_message->len,
-                "%.2f", va_arg (vargs, double));
-            event_message->len += strlen(tmp);
-            break;
-        }
-    }
-
-    return (Event*) event_message;
-}
-
-Event *
-format_event(int type, const gchar *custom_event, ...) {
-    va_list vargs, vacopy;
-    va_start (vargs, custom_event);
-    va_copy (vacopy, vargs);
-    Event *event = vformat_event (type, custom_event, vacopy);
-    va_end (vacopy);
-    va_end (vargs);
-    return event;
-}
-
-void
-send_formatted_event(const Event *event) {
-    // A event string is not supposed to contain newlines as it will be
-    // interpreted as two events
-    GString *event_message = (GString*)event;
-
-    if (!strchr(event_message->str, '\n')) {
-        g_string_append_c(event_message, '\n');
-
-        if (uzbl.state.events_stdout)
-            send_event_stdout (event_message);
-        send_event_socket (event_message);
-    }
-}
-
-void
-event_free(Event *event) {
-    g_string_free ((GString*)event, TRUE);
-}
-
-void
-vsend_event(int type, const gchar *custom_event, va_list vargs) {
-    if (type >= LAST_EVENT)
-        return;
-
-    Event *event = vformat_event(type, custom_event, vargs);
-    send_formatted_event (event);
-    event_free (event);
-}
-
-void
-send_event(int type, const gchar *custom_event, ...) {
-    va_list vargs, vacopy;
-    va_start (vargs, custom_event);
-    va_copy (vacopy, vargs);
-    vsend_event (type, custom_event, vacopy);
-    va_end (vacopy);
-    va_end (vargs);
-}
-
 gchar *
 get_modifier_mask(guint state) {
     GString *modifiers = g_string_new("");
@@ -284,10 +326,10 @@ get_modifier_mask(guint state) {
             g_string_append(modifiers, "Ctrl|");
         if(state & GDK_MOD1_MASK)
             g_string_append(modifiers,"Mod1|");
-		/* Mod2 is usually Num_Luck. Ignore it as it messes up keybindings.
+        /* Mod2 is usually Num_Luck. Ignore it as it messes up keybindings.
         if(state & GDK_MOD2_MASK)
             g_string_append(modifiers,"Mod2|");
-		*/
+        */
         if(state & GDK_MOD3_MASK)
             g_string_append(modifiers,"Mod3|");
         if(state & GDK_MOD4_MASK)
@@ -350,9 +392,9 @@ guint key_to_modifier(guint keyval) {
 }
 
 guint button_to_modifier(guint buttonval) {
-	if(buttonval <= 5)
-		return 1 << (7 + buttonval);
-	return 0;
+    if(buttonval <= 5)
+        return 1 << (7 + buttonval);
+    return 0;
 }
 
 /* Transform gdk key events to our own events */

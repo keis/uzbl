@@ -623,15 +623,18 @@ run_parsed_command(const CommandInfo *c, GArray *a, GString *result) {
        strcmp("event", c->key) &&
        strcmp("request", c->key)) {
 
-        Event *event = format_event (COMMAND_EXECUTED, NULL,
-            TYPE_NAME, c->key,
-            TYPE_STR_ARRAY, a,
-            NULL);
+        Event *event = event_new (COMMAND_EXECUTED, NULL);
+        event_add_argument (event, TYPE_NAME, c->key);
+        const char *arg;
+        int i = 0;
+        while ((arg = argv_idx (a, i++))) {
+            event_add_argument (event, TYPE_STR, arg);
+        }
 
         /* might be destructive on array a */
         c->function(uzbl.gui.web_view, a, result);
 
-        send_formatted_event (event);
+        event_send (event);
         event_free (event);
     }
     else
