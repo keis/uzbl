@@ -34,6 +34,9 @@ enum event_type {
 typedef struct _Event Event;
 struct _Event;
 
+typedef struct _EventHandler EventHandler;
+struct _EventHandler;
+
 /**
  * Allocate a new event empty event of the given type
  */
@@ -79,6 +82,15 @@ send_event(int type, const gchar *custom_event, ...) G_GNUC_NULL_TERMINATED;
 
 void
 vsend_event(int type, const gchar *custom_event, va_list vargs);
+
+/**
+ * on_event
+ */
+void event_handler_execute(const EventHandler *handler, const Event *event);
+
+void register_event_handler(const gchar *event, const gchar *command);
+
+void event_run_handlers(const Event* event);
 
 /**
  * Misc. functions related to events

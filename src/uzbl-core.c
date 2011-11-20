@@ -975,6 +975,7 @@ initialize(int argc, char** argv) {
 
     commands_hash();
     variables_hash();
+    uzbl.behave.event_handlers = g_hash_table_new(g_str_hash, g_str_equal);
 
     /* XDG */
     ensure_xdg_vars();
