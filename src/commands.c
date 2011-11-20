@@ -57,7 +57,8 @@ CommandInfo cmdlist[] =
     { "add_cookie",                     add_cookie, 0                  },
     { "delete_cookie",                  delete_cookie, 0               },
     { "clear_cookies",                  clear_cookies, 0               },
-    { "download",                       download, 0                    }
+    { "download",                       download, 0                    },
+    { "on_event",                       on_event, TRUE                 }
 };
 
 void
@@ -536,4 +537,18 @@ void
 act_dump_config_as_events(WebKitWebView *web_view, GArray *argv, GString *result) {
     (void)web_view; (void) argv; (void)result;
     dump_config_as_events();
+}
+
+void
+on_event(WebKitWebView *web_view, GArray *argv, GString *result) {
+    (void)web_view; (void)result;
+
+    if(!argv_idx(argv, 0))
+        return;
+
+    gchar **split = g_strsplit(argv_idx(argv, 0), " ", 2);
+
+    if (split[0] && split[1]) {
+        register_event_handler (split[0], split[1]);
+    }
 }

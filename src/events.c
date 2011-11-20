@@ -60,19 +60,22 @@ const char *event_table[LAST_EVENT] = {
      "BLUR_ELEMENT"
 };
 
-
-void
-send_event_stdout(GString *msg);
-
-void
-send_event_socket(GString *msg);
-
 struct _Event {
     int type;
     const gchar *name;
     GString *message;
     GArray *arguments;
 };
+
+struct _EventHandler {
+    gchar *command;
+};
+
+void
+send_event_stdout(GString *msg);
+
+void
+send_event_socket(GString *msg);
 
 Event*
 event_new(int type, const gchar *custom_event) {
@@ -185,6 +188,8 @@ event_send(const Event *event) {
         if (uzbl.state.events_stdout)
             send_event_stdout (event->message);
         send_event_socket (event->message);
+
+        event_run_handlers (event);
     }
 }
 
@@ -466,6 +471,49 @@ button_to_event(guint buttonval, guint state, gint mode) {
 
     g_free(details);
     g_free(modifiers);
+}
+
+void
+register_event_handler(const gchar *event, const gchar *command) {
+    GArray *handlers = g_hash_table_lookup (uzbl.behave.event_handlers,
+        event);
+
+    if (!handlers) {
+        handlers = g_array_new (true, false, sizeof (EventHandler*));
+        g_hash_table_insert (uzbl.behave.event_handlers,
+            (gpointer)event,
+            (gpointer)handlers);
+    }
+
+    EventHandler *eh = g_new (EventHandler, 1);
+    eh->command = g_strdup (command);
+
+    g_array_append_val (handlers, eh);
+}
+
+void
+event_run_handlers(const Event* event) {
+    GArray *handlers = g_hash_table_lookup (uzbl.behave.event_handlers,
+        event->name);
+    if (handlers) {
+        EventHandler *eh;
+        int i = 0;
+        while ((eh = g_array_index (handlers, EventHandler*, i++))) {
+            event_handler_execute (eh, event);
+        }
+    }
+}
+
+void
+event_handler_execute(const EventHandler *handler, const Event *event) {
+    GArray *a = g_array_new (TRUE, FALSE, sizeof(gchar*));
+    const CommandInfo *c = parse_command_parts (handler->command, a);
+    if (c) {
+        int i = 0;
+        gchar *arg;
+        run_parsed_command (c, a, NULL);
+    }
+    g_array_free (a, TRUE);
 }
 
 /* vi: set et ts=4: */

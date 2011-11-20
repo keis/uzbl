@@ -163,6 +163,8 @@ typedef struct {
     GHashTable* commands;
     /* variables: (key)name -> (value)uzbl_cmdprop */
     GHashTable* proto_var;
+    /* event triggers: (key)name -> (value)GArray of EventHandler */
+    GHashTable* event_handlers;
 } Behaviour;
 
 

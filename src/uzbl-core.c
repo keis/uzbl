@@ -986,6 +986,7 @@ initialize(int argc, char** argv) {
 
     commands_hash();
     variables_hash();
+    uzbl.behave.event_handlers = g_hash_table_new(g_str_hash, g_str_equal);
 
     /* GUI */
     gtk_init(&argc, &argv);
