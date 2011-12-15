@@ -45,4 +45,6 @@ void        set_geometry(const gchar *);
 int         get_show_status();
 void        set_show_status(int);
 
+void        set_arguments(GArray *);
+
 #endif

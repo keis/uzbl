@@ -9,6 +9,7 @@
 #include "events.h"
 #include "util.h"
 #include "type.h"
+#include "variables.h"
 
 /* Event id to name mapping
  * Event names must be in the same
@@ -506,6 +507,7 @@ event_run_handlers(const Event* event) {
 
 void
 event_handler_execute(const EventHandler *handler, const Event *event) {
+    set_arguments (event->arguments);
     GArray *a = g_array_new (TRUE, FALSE, sizeof(gchar*));
     const CommandInfo *c = parse_command_parts (handler->command, a);
     if (c) {
