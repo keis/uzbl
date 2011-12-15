@@ -998,3 +998,18 @@ variables_hash() {
         n2v_p++;
     }
 }
+
+/**
+ * Exports the contents of the given array as $1, $2 .. $n
+ */
+void
+set_arguments(GArray *args) {
+    for (unsigned int i = 0; i < args->len; i++) {
+        char *name = g_strdup_printf ("%u", i+1);
+        set_var_value (
+            name,
+            g_array_index (args, char*, i)
+        );
+        g_free (name);
+    }
+}
