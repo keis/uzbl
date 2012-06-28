@@ -479,16 +479,18 @@ run_command (const gchar *command, const gchar **args, const gboolean sync,
     for (i = 0; i < g_strv_length((gchar**)args); i++)
         sharg_append(a, args[i]);
 
+    if (output_stdout && *output_stdout) {
+        g_free (*output_stdout);
+    }
+
     gboolean result;
     if (sync) {
-        if (*output_stdout)
-            g_free(*output_stdout);
-
         result = g_spawn_sync(NULL, (gchar **)a->data, NULL, G_SPAWN_SEARCH_PATH,
                               NULL, NULL, output_stdout, NULL, NULL, &err);
-    } else
+    } else {
         result = g_spawn_async(NULL, (gchar **)a->data, NULL, G_SPAWN_SEARCH_PATH,
-                                  NULL, NULL, NULL, &err);
+                               NULL, NULL, NULL, &err);
+    }
 
     if (uzbl.state.verbose) {
         GString *s = g_string_new("spawned:");
