@@ -10,6 +10,7 @@ ENABLE_WEBKIT2 ?= auto
 ENABLE_GTK3    ?= auto
 
 PYTHON=python3
+JSHINT=jshint
 PYTHONV=$(shell $(PYTHON) --version | sed -n /[0-9].[0-9]/p)
 COVERAGE=$(shell which coverage)
 
@@ -62,6 +63,7 @@ HEAD = $(wildcard src/*.h)
 OBJ  = $(foreach obj, $(SRC:.c=.o),  $(notdir $(obj)))
 LOBJ = $(foreach obj, $(SRC:.c=.lo), $(notdir $(obj)))
 PY = $(wildcard uzbl/*.py uzbl/plugins/*.py)
+JSHINTCONFIG=misc/jshint.json
 
 all: uzbl-browser
 
@@ -91,6 +93,10 @@ ${LOBJ}: ${SRC} ${HEAD}
 tests: ${LOBJ} force
 	$(CC) -shared -Wl ${LOBJ} -o ./tests/libuzbl-core.so
 	cd ./tests/; $(MAKE)
+
+test-javascript:
+	@which ${JSHINT} > /dev/null || echo "you can install jshint using 'npm intall -g jshint'"
+	${JSHINT} --config ${JSHINTCONFIG} examples/data/scripts
 
 test-event-manager: force
 	${PYTHON} -m unittest discover tests/event-manager -v

@@ -1,5 +1,3 @@
-/*jslint browser: true, vars: true, maxerr: 50, indent: 4 */
-/*global uzbl, HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement */
 // This is the basic linkfollowing script.
 //
 // TODO:
@@ -333,6 +331,7 @@ uzbl.follow = (function () {
             }
             return 'XXXNEW_WINDOWXXX' + uri;
         case 'click':
+            /* falls through */
         default:
             return clickElem(el);
         }
@@ -347,6 +346,7 @@ uzbl.follow = (function () {
             gMode = 'returnuri';
             break;
         case 'click':
+            /* falls through */
         default:
             gMode = 'click';
             break;

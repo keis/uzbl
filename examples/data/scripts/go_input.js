@@ -1,5 +1,3 @@
-/*jslint browser: true, vars: true, maxerr: 50, indent: 4 */
-/*global getComputedStyle */
 (function () {
     'use strict';
 
