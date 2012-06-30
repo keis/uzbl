@@ -1,3 +1,12 @@
+/**
+ * TODO
+ *  - support HTTP-style headers from commands for content-type (anything else?)
+ *    - SoupMessageHeaders
+ *  - non-blocking commands
+ *  - code style
+ *  - documentation
+ */
+
 #include "request.h"
 
 #include <libsoup/soup-uri.h>
