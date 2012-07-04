@@ -1,7 +1,7 @@
 import re
 
 from uzbl.arguments import splitquoted
-from uzbl.ext import PerInstancePlugin
+from uzbl.ext import PerInstancePlugin, on_event
 from .config import Config
 
 # Keycmd format which includes the markup for the cursor.
@@ -231,22 +231,6 @@ class KeyCmd(PerInstancePlugin):
         self.modmaps = {}
         self.ignores = {}
 
-        uzbl.connect('APPEND_KEYCMD', self.append_keycmd)
-        uzbl.connect('IGNORE_KEY', self.add_key_ignore)
-        uzbl.connect('INJECT_KEYCMD', self.inject_keycmd)
-        uzbl.connect('KEYCMD_BACKSPACE', self.keycmd_backspace)
-        uzbl.connect('KEYCMD_DELETE', self.keycmd_delete)
-        uzbl.connect('KEYCMD_EXEC_CURRENT', self.keycmd_exec_current)
-        uzbl.connect('KEYCMD_STRIP_WORD', self.keycmd_strip_word)
-        uzbl.connect('KEYCMD_CLEAR', self.clear_keycmd)
-        uzbl.connect('KEY_PRESS', self.key_press)
-        uzbl.connect('KEY_RELEASE', self.key_release)
-        uzbl.connect('MOD_PRESS', self.key_press)
-        uzbl.connect('MOD_RELEASE', self.key_release)
-        uzbl.connect('MODMAP', self.modmap_parse)
-        uzbl.connect('SET_CURSOR_POS', self.set_cursor_pos)
-        uzbl.connect('SET_KEYCMD', self.set_keycmd)
-
     def modmap_key(self, key):
         '''Make some obscure names for some keys friendlier.'''
 
@@ -259,7 +243,6 @@ class KeyCmd(PerInstancePlugin):
 
         else:
             return key
-
 
     def key_ignored(self, key):
         '''Check if the given key is ignored by any ignore rules.'''
@@ -292,6 +275,7 @@ class KeyCmd(PerInstancePlugin):
         modmaps[key.strip('<>')] = map.strip('<>')
         self.uzbl.event("NEW_MODMAP", key, map)
 
+    @on_event('MODMAP')
     def modmap_parse(self, map):
         '''Parse a modmap definiton.'''
 
@@ -302,6 +286,7 @@ class KeyCmd(PerInstancePlugin):
 
         self.add_modmap(*split)
 
+    @on_event('IGNORE_KEY')
     def add_key_ignore(self, glob):
         '''Add an ignore definition.
 
@@ -322,6 +307,7 @@ class KeyCmd(PerInstancePlugin):
         ignores[glob] = match
         self.uzbl.event('NEW_KEY_IGNORE', glob)
 
+    @on_event('KEYCMD_CLEAR')
     def clear_keycmd(self, *args):
         '''Clear the keycmd for this uzbl instance.'''
 
@@ -391,6 +377,7 @@ class KeyCmd(PerInstancePlugin):
         key = self.modmap_key(key)
         return modstate, key
 
+    @on_event('KEY_PRESS', 'MOD_PRESS')
     def key_press(self, key):
         '''Handle KEY_PRESS events. Things done by this function include:
 
@@ -429,6 +416,7 @@ class KeyCmd(PerInstancePlugin):
 
         self.update_event(modstate, k)
 
+    @on_event('KEY_RELEASE', 'MOD_RELEASE')
     def key_release(self, key):
         '''Respond to KEY_RELEASE event. Things done by this function include:
 
@@ -443,24 +431,28 @@ class KeyCmd(PerInstancePlugin):
 
             self.clear_modcmd()
 
+    @on_event('SET_KEYCMD')
     def set_keycmd(self, keycmd):
         '''Allow setting of the keycmd externally.'''
 
         self.keylet.set_keycmd(keycmd)
         self.update_event(set(), self.keylet, False)
 
+    @on_event('INJECT_KEYCMD')
     def inject_keycmd(self, keycmd):
         '''Allow injecting of a string into the keycmd at the cursor position.'''
 
         self.keylet.insert_keycmd(keycmd)
         self.update_event(set(), self.keylet, False)
 
+    @on_event('APPEND_KEYCMD')
     def append_keycmd(self, keycmd):
         '''Allow appening of a string to the keycmd.'''
 
         self.keylet.append_keycmd(keycmd)
         self.update_event(set(), self.keylet, False)
 
+    @on_event('KEYCMD_STRIP_WORD')
     def keycmd_strip_word(self, args):
         ''' Removes the last word from the keycmd, similar to readline ^W '''
 
@@ -470,18 +462,21 @@ class KeyCmd(PerInstancePlugin):
         if self.keylet.strip_word(*args):
             self.update_event(set(), self.keylet, False)
 
+    @on_event('KEYCMD_BACKSPACE')
     def keycmd_backspace(self, *args):
         '''Removes the character at the cursor position in the keycmd.'''
 
         if self.keylet.backspace():
             self.update_event(set(), self.keylet, False)
 
+    @on_event('KEYCMD_DELETE')
     def keycmd_delete(self, *args):
         '''Removes the character after the cursor position in the keycmd.'''
 
         if self.keylet.delete():
             self.update_event(set(), self.keylet, False)
 
+    @on_event('KEYCMD_EXEC_CURRENT')
     def keycmd_exec_current(self, *args):
         '''Raise a KEYCMD_EXEC with the current keylet and then clear the
         keycmd.'''
@@ -489,6 +484,7 @@ class KeyCmd(PerInstancePlugin):
         self.uzbl.event('KEYCMD_EXEC', set(), self.keylet)
         self.clear_keycmd()
 
+    @on_event('SET_CURSOR_POS')
     def set_cursor_pos(self, args):
         '''Allow setting of the cursor position externally. Supports negative
         indexing and relative stepping with '+' and '-'.'''

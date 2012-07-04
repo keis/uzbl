@@ -6,6 +6,26 @@ per_instance_registry = []
 global_registry = []
 
 
+class EventHandler(object):
+    def __init__(self, events, fun):
+        self.events = events
+        self.fun = fun
+
+    def connect(self, plugin, uzbl):
+        bound = self.fun.__get__(plugin, plugin.__class__)
+        for event in events:
+            uzbl.connect(event, bound)
+
+    def __repr__(self):
+        return '<EventHandler %s>' % ', '.join(self.events)
+
+
+def on_event(*events):
+    def mkeventhandler(fun):
+        return EventHandler(events, fun)
+    return mkeventhandler
+
+
 class PluginMeta(type):
     """Registers plugin in registry so that it instantiates when needed"""
 
@@ -19,6 +39,12 @@ class PluginMeta(type):
             per_instance_registry.append(self)
         elif issubclass(self, GlobalPlugin):
             global_registry.append(self)
+
+        self._event_handlers = []
+        add_event_handler = self._event_handlers.append
+        for k, v in dic.items():
+            if isinstance(v, EventHandler):
+                add_event_handler(v)
 
     def __getitem__(self, owner):
         """This method returns instance of plugin corresponding to owner
@@ -43,6 +69,8 @@ class PerInstancePlugin(BasePlugin):
     def __init__(self, uzbl):
         self.uzbl = uzbl
         self.logger = uzbl.logger  # we can also append plugin name to logger
+        for h in self._event_handlers:
+            h.connect(self, uzbl)
 
     def cleanup(self):
         """Cleanup state after instance is gone
@@ -71,6 +99,8 @@ class GlobalPlugin(BasePlugin):
     def __init__(self, event_manager):
         self.event_manager = event_manager
         self.logger = logging.getLogger(self.__module__)
+        for h in self._event_handlers:
+            h.connect(self, uzbl)
 
     @classmethod
     def _get_instance(cls, owner):
