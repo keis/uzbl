@@ -291,6 +291,8 @@ file).
   rendering the HTML sting given.
 * `geometry`: Geometry and position of the Uzbl window. Format is
   "<width>x<height>+<x-offset>+<y-offset>".
+* `hide_titlebar_when_maximized` whether to instruct the window manager to hide
+  titlebar when maximized
 * `keycmd`: Holds the input buffer (callback: update input buffer).
 * `show_status`: Show statusbar or not.
 * `status_top`: statusbar on top?

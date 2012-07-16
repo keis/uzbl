@@ -692,6 +692,22 @@ set_geometry(const gchar *geometry) {
     uzbl.gui.geometry = get_geometry();
 }
 
+int
+get_hide_titlebar_when_maximized() {
+    if(!uzbl.gui.main_window)
+        return -1;
+    return gtk_window_get_hide_titlebar_when_maximized(
+        GTK_WINDOW(uzbl.gui.main_window));
+}
+
+void
+set_hide_titlebar_when_maximized(int value) {
+    if(!uzbl.gui.main_window)
+        return;
+    gtk_window_set_hide_titlebar_when_maximized(
+        GTK_WINDOW(uzbl.gui.main_window), value);
+}
+
 void
 set_show_status(int show_status) {
     gtk_widget_set_visible(uzbl.gui.status_bar, show_status);
@@ -868,6 +884,8 @@ const struct var_name_to_ptr_t {
     { "geometry",               PTR_V_STR_GETSET(geometry)},
     { "icon",                   PTR_V_STR(uzbl.gui.icon,                        1,   set_icon)},
     { "window_role",            PTR_V_STR_GETSET(window_role)},
+    { "hide_titlebar_when_maximized",
+                                PTR_V_INT_GETSET(hide_titlebar_when_maximized)},
 
     { "forward_keys",           PTR_V_INT(uzbl.behave.forward_keys,             1,   NULL)},
 
