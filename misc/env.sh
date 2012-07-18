@@ -29,10 +29,21 @@ export XDG_CONFIG_HOME
 PATH="$(pwd)/sandbox/usr/local/bin:$PATH"
 export PATH
 
-PYTHONLIB=$(python3 -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib(prefix="/usr/local"))')
+# Figure out where setup have installed stuff
+PYTHONLIB=$(python3 -c '
+from distutils.dist import Distribution
+from distutils.command.install import install
+dummy = install(Distribution())
+dummy.finalize_options()
+print(dummy.install_lib)')
 
 UZBL_PLUGIN_PATH="$(pwd)/sandbox/$PYTHONLIB/uzbl/plugins"
 export UZBL_PLUGIN_PATH
 
 PYTHONPATH="$(pwd)/sandbox/$PYTHONLIB/"
 export PYTHONPATH
+
+if [ ! -d "${PYTHONPATH}" ]; then
+    echo "$0: bad python path for sandbox: ${PYTHONPATH}"
+    exit 1
+fi
