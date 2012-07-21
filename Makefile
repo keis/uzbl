@@ -9,9 +9,7 @@ RUN_PREFIX ?= $(PREFIX)
 ENABLE_WEBKIT2 ?= auto
 ENABLE_GTK3    ?= auto
 
-PYTHON=python3
-PYTHONV=$(shell $(PYTHON) --version | sed -n /[0-9].[0-9]/p)
-COVERAGE=$(shell which coverage)
+PYTHON?=python3
 
 # --- configuration ends here ---
 
@@ -48,6 +46,8 @@ REQ_PKGS += 'libsoup-2.4 >= 2.30' gthread-2.0 glib-2.0
 ARCH:=$(shell uname -m)
 
 COMMIT_HASH:=$(shell ./misc/hash.sh)
+
+COVERAGE:=$(shell which coverage)
 
 CPPFLAGS += -D_BSD_SOURCE -D_POSIX_SOURCE -DARCH=\"$(ARCH)\" -DCOMMIT=\"$(COMMIT_HASH)\"
 
@@ -147,8 +147,7 @@ strip:
 
 SANDBOXOPTS=\
 	DESTDIR=./sandbox\
-	RUN_PREFIX=`pwd`/sandbox/usr/local\
-	PYINSTALL_EXTRA='--root=./sandbox'
+	RUN_PREFIX=`pwd`/sandbox/usr/local
 
 sandbox: misc/env.sh
 	mkdir -p sandbox/${PREFIX}/lib64
@@ -182,7 +181,7 @@ install-uzbl-core: uzbl-core install-dirs
 	install -m755 uzbl-core $(INSTALLDIR)/bin/uzbl-core
 
 install-event-manager: install-dirs
-	$(PYTHON) setup.py install $(PYINSTALL_EXTRA)
+	$(PYTHON) setup.py install --root=${DESTDIR}/
 
 install-uzbl-browser: install-dirs install-uzbl-core install-event-manager
 	sed 's#^PREFIX=.*#PREFIX=$(RUN_PREFIX)#' < bin/uzbl-browser > $(INSTALLDIR)/bin/uzbl-browser

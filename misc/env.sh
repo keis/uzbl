@@ -26,7 +26,7 @@ XDG_CONFIG_HOME=$HOME/.config
 export XDG_CONFIG_HOME
 
 # Needed to run uzbl-browser etc from here.
-PATH="$(pwd)/sandbox/usr/local/bin:$PATH"
+PATH="$(pwd)/sandbox/usr/local/bin:$(pwd)/sandbox/usr/bin:$PATH"
 export PATH
 
 # Figure out where setup have installed stuff
