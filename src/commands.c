@@ -84,6 +84,10 @@ cmd_search_clear (WebKitWebView *view, GArray *argv, GString *result);
 static void
 cmd_search_reset (WebKitWebView *view, GArray *argv, GString *result);
 
+/* Inspector commands */
+static void
+cmd_inspector_show (WebKitWebView *view, GArray *argv, GString *result);
+
 /* Variable commands */
 static void
 set_var (WebKitWebView *view, GArray *argv, GString *result);
@@ -109,10 +113,6 @@ static void
 event (WebKitWebView *view, GArray *argv, GString *result);
 static void
 event (WebKitWebView *view, GArray *argv, GString *result);
-
-/* Inspector commands */
-static void
-show_inspector (WebKitWebView *view, GArray *argv, GString *result);
 
 static UzblCommandInfo
 builtin_command_table[] =
@@ -161,7 +161,7 @@ builtin_command_table[] =
     { "dehilight",                      cmd_search_reset,             TRUE  }, /* TODO: Rework to be "search reset". */
 
     /* Inspector commands */
-    { "show_inspector",                 show_inspector,               TRUE  },
+    { "show_inspector",                 cmd_inspector_show,           TRUE  }, /* TODO: Rework to be "inspector show". */
 
     /* Execution commands */
     { "js",                             run_js,                       FALSE },
@@ -759,6 +759,18 @@ search_text (WebKitWebView *view, const gchar *key, const gboolean forward)
     }
 }
 
+/* Inspector commands */
+
+void
+cmd_inspector_show (WebKitWebView *view, GArray *argv, GString *result)
+{
+    UZBL_UNUSED (view);
+    UZBL_UNUSED (argv);
+    UZBL_UNUSED (result);
+
+    webkit_web_inspector_show (uzbl.gui.inspector);
+}
+
 void
 set_var(WebKitWebView *page, GArray *argv, GString *result) {
     (void) page; (void) result;
@@ -932,13 +944,6 @@ include(WebKitWebView *page, GArray *argv, GString *result) {
         send_event(FILE_INCLUDED, NULL, TYPE_STR, path, NULL);
         g_free(path);
     }
-}
-
-void
-show_inspector(WebKitWebView *page, GArray *argv, GString *result) {
-    (void) page; (void) argv; (void) result;
-
-    webkit_web_inspector_show(uzbl.gui.inspector);
 }
 
 void
