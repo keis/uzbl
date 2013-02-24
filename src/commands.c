@@ -60,7 +60,7 @@ cmd_status_toggle (WebKitWebView *view, GArray *argv, GString *result);
 static void
 cmd_hardcopy (WebKitWebView *view, GArray *argv, GString *result);
 
-/* Execution commands. */
+/* Execution commands */
 static void
 run_js (WebKitWebView *view, GArray *argv, GString *result);
 static void
@@ -86,7 +86,7 @@ search_clear (WebKitWebView *view, GArray *argv, GString *result);
 static void
 dehilight (WebKitWebView *view, GArray *argv, GString *result);
 
-/* Variable commands. */
+/* Variable commands */
 static void
 set_var (WebKitWebView *view, GArray *argv, GString *result);
 static void
@@ -98,95 +98,95 @@ act_dump_config_as_events (WebKitWebView *view, GArray *argv, GString *result);
 static void
 print (WebKitWebView *view, GArray *argv, GString *result);
 
-/* Uzbl commands. */
+/* Uzbl commands */
 static void
 chain (WebKitWebView *view, GArray *argv, GString *result);
 static void
 include (WebKitWebView *view, GArray *argv, GString *result);
 
-/* Event commands. */
+/* Event commands */
 static void
 event (WebKitWebView *view, GArray *argv, GString *result);
 static void
 event (WebKitWebView *view, GArray *argv, GString *result);
 
-/* Inspector commands. */
+/* Inspector commands */
 static void
 show_inspector (WebKitWebView *view, GArray *argv, GString *result);
 
 static UzblCommandInfo
 builtin_command_table[] =
-{   /* name                             function                   split */
+{   /* name                             function                      split */
     /* Navigation commands */
-    { "back",                           cmd_back,                  TRUE  },
-    { "forward",                        cmd_forward,               TRUE  },
-    { "reload",                         cmd_reload,                TRUE  },
-    { "reload_ign_cache",               cmd_reload_force,          TRUE  }, /* TODO: Rename to "reload_force". */
-    { "stop",                           cmd_stop,                  TRUE  },
-    { "uri",                            cmd_uri,                   FALSE },
-    { "auth",                           cmd_auth,                  TRUE  },
-    { "download",                       cmd_download,              TRUE  },
+    { "back",                           cmd_back,                     TRUE  },
+    { "forward",                        cmd_forward,                  TRUE  },
+    { "reload",                         cmd_reload,                   TRUE  },
+    { "reload_ign_cache",               cmd_reload_force,             TRUE  }, /* TODO: Rename to "reload_force". */
+    { "stop",                           cmd_stop,                     TRUE  },
+    { "uri",                            cmd_uri,                      FALSE },
+    { "auth",                           cmd_auth,                     TRUE  },
+    { "download",                       cmd_download,                 TRUE  },
 
     /* Cookie commands */
-    { "add_cookie",                     cmd_cookie_add,            TRUE  }, /* TODO: Rework to be "cookie add". */
-    { "delete_cookie",                  cmd_cookie_delete,         TRUE  }, /* TODO: Rework to be "cookie delete". */
-    { "clear_cookies",                  cmd_cookie_clear,          TRUE  }, /* TODO: Rework to be "cookie clear". */
+    { "add_cookie",                     cmd_cookie_add,               TRUE  }, /* TODO: Rework to be "cookie add". */
+    { "delete_cookie",                  cmd_cookie_delete,            TRUE  }, /* TODO: Rework to be "cookie delete". */
+    { "clear_cookies",                  cmd_cookie_clear,             TRUE  }, /* TODO: Rework to be "cookie clear". */
 
     /* Display commands */
-    { "scroll",                         cmd_scroll,                TRUE  },
-    { "zoom_in",                        cmd_zoom_in,               TRUE  }, /* TODO: Rework to be "zoom in". */
-    { "zoom_out",                       cmd_zoom_out,              TRUE  }, /* TODO: Rework to be "zoom out". */
-    { "toggle_zoom_type",               cmd_zoom_toggle_type,      TRUE  }, /* XXX: Deprecated (toggle). */
-    { "toggle_status",                  cmd_status_toggle,         TRUE  }, /* XXX: Deprecated (toggle). */
-    { "hardcopy",                       cmd_hardcopy,              FALSE },
+    { "scroll",                         cmd_scroll,                   TRUE  },
+    { "zoom_in",                        cmd_zoom_in,                  TRUE  }, /* TODO: Rework to be "zoom in". */
+    { "zoom_out",                       cmd_zoom_out,                 TRUE  }, /* TODO: Rework to be "zoom out". */
+    { "toggle_zoom_type",               cmd_zoom_toggle_type,         TRUE  }, /* XXX: Deprecated (toggle). */
+    { "toggle_status",                  cmd_status_toggle,            TRUE  }, /* XXX: Deprecated (toggle). */
+    { "hardcopy",                       cmd_hardcopy,                 FALSE },
 
-    /* Menu commands. */
-    { "menu_add",                       menu_add,                  FALSE },
-    { "menu_link_add",                  menu_add_link,             FALSE },
-    { "menu_image_add",                 menu_add_image,            FALSE },
-    { "menu_editable_add",              menu_add_edit,             FALSE },
-    { "menu_separator",                 menu_add_separator,        FALSE },
-    { "menu_link_separator",            menu_add_separator_link,   FALSE },
-    { "menu_image_separator",           menu_add_separator_image,  FALSE },
-    { "menu_editable_separator",        menu_add_separator_edit,   FALSE },
-    { "menu_remove",                    menu_remove,               FALSE },
-    { "menu_link_remove",               menu_remove_link,          FALSE },
-    { "menu_image_remove",              menu_remove_image,         FALSE },
-    { "menu_editable_remove",           menu_remove_edit,          FALSE },
+    /* Menu commands */
+    { "menu_add",                       cmd_menu_add,                 FALSE }, /* TODO: Rework to be "menu add". */
+    { "menu_link_add",                  cmd_menu_add_link,            FALSE }, /* TODO: Rework to be "menu add link". */
+    { "menu_image_add",                 cmd_menu_add_image,           FALSE }, /* TODO: Rework to be "menu add image". */
+    { "menu_editable_add",              cmd_menu_add_edit,            FALSE }, /* TODO: Rework to be "menu add edit". */
+    { "menu_separator",                 cmd_menu_add_separator,       FALSE }, /* TODO: Rework to be "menu add separator". */
+    { "menu_link_separator",            cmd_menu_add_separator_link,  FALSE }, /* TODO: Rework to be "menu add separator link". */
+    { "menu_image_separator",           cmd_menu_add_separator_image, FALSE }, /* TODO: Rework to be "menu add separator image". */
+    { "menu_editable_separator",        cmd_menu_add_separator_edit,  FALSE }, /* TODO: Rework to be "menu add separator edit". */
+    { "menu_remove",                    cmd_menu_remove,              FALSE }, /* TODO: Rework to be "menu remove". */
+    { "menu_link_remove",               cmd_menu_remove_link,         FALSE }, /* TODO: Rework to be "menu remove link". */
+    { "menu_image_remove",              cmd_menu_remove_image,        FALSE }, /* TODO: Rework to be "menu remove image". */
+    { "menu_editable_remove",           cmd_menu_remove_edit,         FALSE }, /* TODO: Rework to be "menu remove edit". */
 
     /* Search commands */
-    { "search",                         search_forward_text,       FALSE },
-    { "search_reverse",                 search_reverse_text,       FALSE },
-    { "search_clear",                   search_clear,              FALSE },
-    { "dehilight",                      dehilight,                 TRUE  },
+    { "search",                         search_forward_text,          FALSE },
+    { "search_reverse",                 search_reverse_text,          FALSE },
+    { "search_clear",                   search_clear,                 FALSE },
+    { "dehilight",                      dehilight,                    TRUE  },
 
-    /* Inspector commands. */
-    { "show_inspector",                 show_inspector,            TRUE  },
+    /* Inspector commands */
+    { "show_inspector",                 show_inspector,               TRUE  },
 
-    /* Execution commands. */
-    { "js",                             run_js,                    FALSE },
-    { "script",                         run_external_js,           TRUE  },
-    { "spawn",                          spawn_async,               TRUE  },
-    { "sync_spawn",                     spawn_sync,                TRUE  },
-    { "sync_spawn_exec",                spawn_sync_exec,           TRUE  }, // needed for load_cookies.sh :(
-    { "sh",                             spawn_sh_async,            TRUE  },
-    { "sync_sh",                        spawn_sh_sync,             TRUE  },
+    /* Execution commands */
+    { "js",                             run_js,                       FALSE },
+    { "script",                         run_external_js,              TRUE  },
+    { "spawn",                          spawn_async,                  TRUE  },
+    { "sync_spawn",                     spawn_sync,                   TRUE  },
+    { "sync_spawn_exec",                spawn_sync_exec,              TRUE  }, // needed for load_cookies.sh :(
+    { "sh",                             spawn_sh_async,               TRUE  },
+    { "sync_sh",                        spawn_sh_sync,                TRUE  },
 
-    /* Uzbl commands. */
-    { "chain",                          chain,                     TRUE  },
-    { "include",                        include,                   FALSE },
-    { "exit",                           close_uzbl,                TRUE  },
+    /* Uzbl commands */
+    { "chain",                          chain,                        TRUE  },
+    { "include",                        include,                      FALSE },
+    { "exit",                           close_uzbl,                   TRUE  },
 
-    /* Variable commands. */
-    { "set",                            set_var,                   FALSE },
-    { "toggle",                         toggle_var,                TRUE  },
-    { "dump_config",                    act_dump_config,           TRUE  },
-    { "dump_config_as_events",          act_dump_config_as_events, TRUE  },
-    { "print",                          print,                     FALSE },
+    /* Variable commands */
+    { "set",                            set_var,                      FALSE },
+    { "toggle",                         toggle_var,                   TRUE  },
+    { "dump_config",                    act_dump_config,              TRUE  },
+    { "dump_config_as_events",          act_dump_config_as_events,    TRUE  },
+    { "print",                          print,                        FALSE },
 
-    /* Event commands. */
-    { "event",                          event,                     FALSE },
-    { "request",                        event,                     FALSE }
+    /* Event commands */
+    { "event",                          event,                        FALSE },
+    { "request",                        event,                        FALSE }
 };
 
 void
