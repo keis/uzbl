@@ -213,6 +213,7 @@ uzbl_command_send_builtin_event ()
     send_event (BUILTINS, NULL,
         TYPE_STR, command_list->str,
         NULL);
+
     g_string_free(command_list, TRUE);
 }
 
