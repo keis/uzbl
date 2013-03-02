@@ -270,11 +270,13 @@ parse_command_arguments(const gchar *p, GArray *a, gboolean split) {
 
     gchar **par = split_quoted(p, TRUE);
     if (par) {
-        guint i;
-        for (i = 0; i < g_strv_length(par); i++)
-            sharg_append(a, g_strdup(par[i]));
+        gchar **tmp = par;
+        while (*tmp) {
+            sharg_append (a, g_strdup(*tmp++));
+        }
         g_strfreev (par);
     }
+
 }
 
 const UzblCommandInfo *
@@ -1017,25 +1019,33 @@ spawn_sh (GArray *argv, GString *result)
     guint i;
 
     gchar **cmd = split_quoted (uzbl.behave.shell_cmd, TRUE);
+    gchar **tmp = cmd;
+    gchar *sh;
+    GArray *real_args;
+
     if (!cmd) {
         return;
     }
 
-    g_array_insert_val (argv, 1, cmd[0]);
+    real_args = g_array_new (TRUE, FALSE, sizeof (gchar*));
+    sh = *tmp++; // Shell executable
 
-    for (i = g_strv_length (cmd)-1; i; --i) {
-        g_array_prepend_val (argv, cmd[i]);
+    while (*tmp) {
+        g_array_append_val (real_args, *tmp++);
     }
+    g_array_append_val (real_args, g_array_index (argv, gchar*, 0));
+    g_array_append_val (real_args, sh);
+    g_array_append_vals (real_args, &g_array_index (argv, gchar*, 1), argv->len - 1);
 
-    const gchar *arg_start = argv_idx (argv, 0);
+    const gchar **arg_start = &g_array_index (real_args, gchar*, 0);
 
     if (result) {
         gchar *r = NULL;
-        run_command (cmd[0], &arg_start, TRUE, &r);
+        run_command (sh, arg_start, TRUE, &r);
         g_string_assign (result, r);
         g_free (r);
     } else {
-        run_command (cmd[0], &arg_start, FALSE, NULL);
+        run_command (sh, arg_start, FALSE, NULL);
     }
 
     g_strfreev (cmd);
@@ -1052,9 +1062,8 @@ run_command (const gchar *command, const gchar **args, const gboolean sync,
     guint len = g_strv_length ((gchar **)args);
 
     sharg_append (a, command);
-
-    for (i = 0; i < len; ++i) {
-        sharg_append (a, args[i]);
+    while (*args) {
+        sharg_append (a, *args++);
     }
 
     gboolean result;
