@@ -203,6 +203,7 @@ uzbl_init (int *argc, char ***argv)
                                                      uzbl.state.web_extensions_directory);
 #endif
 #endif
+    webkit_web_context_set_web_extensions_directory (webkit_context, "/home/keis/git/uzbl/web-extension");
 
     /* HTTP client. */
 #ifndef USE_WEBKIT2 /* FIXME: This seems important... */

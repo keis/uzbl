@@ -142,6 +142,8 @@ OBJ  = $(foreach obj, $(SRC:.c=.o),  $(obj))
 LOBJ = $(foreach obj, $(SRC:.c=.lo), $(obj))
 PY   = $(wildcard uzbl/*.py uzbl/plugins/*.py)
 
+webext_OBJ=src/web-extension.lo
+
 all: uzbl-browser
 
 VPATH := src
@@ -161,6 +163,13 @@ uzbl.desktop: uzbl.desktop.in
 bin/uzbl-browser: bin/uzbl-browser.in
 	sed 's#@PREFIX@#$(PREFIX)#' < bin/uzbl-browser.in > bin/uzbl-browser
 	chmod +x bin/uzbl-browser
+
+src/web-extension.lo: src/web-extension.c ${HEAD}
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
+
+web-extension/web-extension.so: ${webext_OBJ}
+	@mkdir -p `dirname $@`
+	$(CC) -shared $< -o $@
 
 build: ${PY}
 	$(PYTHON) setup.py build
