@@ -165,7 +165,7 @@ bin/uzbl-browser: bin/uzbl-browser.in
 	chmod +x bin/uzbl-browser
 
 src/web-extension.lo: src/web-extension.c ${HEAD}
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
+	$(CC) -DWEBKIT_DOM_USE_UNSTABLE_API $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
 web-extension/web-extension.so: ${webext_OBJ}
 	@mkdir -p `dirname $@`
