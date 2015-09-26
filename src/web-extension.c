@@ -2,6 +2,7 @@
 #include <webkitdom/WebKitDOMDOMWindowUnstable.h>
 #include <webkitdom/webkitdom.h>
 #include <time.h>
+#include <fcntl.h>
 
 static void
 dom_focus_cb (WebKitDOMEventTarget *target, WebKitDOMEvent *event, gpointer data);
@@ -54,6 +55,9 @@ uzbl_web_page_created_callback (WebKitWebExtension *extension,
 G_MODULE_EXPORT void
 webkit_web_extension_initialize (WebKitWebExtension *extension)
 {
+    int fd = open ("/dev/null", O_RDONLY);
+    g_print ("extension loaded for %d %s.\n", getpid (), g_getenv ("UZBL_WHOOOP"));
+    g_print ("there are %d open files\n", fd - 1);
     g_signal_connect (extension, "page-created",
                       G_CALLBACK (uzbl_web_page_created_callback),
                       NULL);

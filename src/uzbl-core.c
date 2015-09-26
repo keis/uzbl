@@ -73,6 +73,12 @@ uzbl_init (int *argc, char ***argv)
     gboolean print_version = FALSE;
     gboolean bug_info = FALSE;
 
+
+    int pipe_fd[2];
+    pipe (pipe_fd);
+
+    g_setenv ("UZBL_WHOOOP", "Hej hej!", true);
+
     /* Commandline arguments. */
     const GOptionEntry
     options[] = {
