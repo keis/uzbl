@@ -9,7 +9,8 @@
 typedef enum {
     EXT_HELO,
     EXT_FOCUS,
-    EXT_BLUR
+    EXT_BLUR,
+    EXT_RUN_JS
 } ExtIOMessageType;
 
 void

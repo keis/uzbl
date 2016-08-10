@@ -5,9 +5,11 @@
 #include "uzbl-ext.h"
 #include "extio.h"
 #include "util.h"
+#include "js.h"
 
 struct _UzblExt {
     GIOStream *stream;
+    WebKitWebPage *web_page;
 };
 
 UzblExt*
@@ -15,6 +17,36 @@ uzbl_ext_new ()
 {
     UzblExt *ext = g_new (UzblExt, 1);
     return ext;
+}
+
+static JSValueRef
+uzbl_js_evaluate(JSGlobalContextRef jsctx, const gchar *script, const gchar *path)
+{
+    JSObjectRef globalobject = JSContextGetGlobalObject (jsctx);
+    JSValueRef js_exc = NULL;
+
+    JSStringRef js_script = JSStringCreateWithUTF8CString (script);
+    JSStringRef js_file = JSStringCreateWithUTF8CString (path);
+    JSValueRef js_result = JSEvaluateScript (jsctx, js_script, globalobject, js_file, 0, &js_exc);
+
+    if (js_exc) {
+        JSObjectRef exc = JSValueToObject (jsctx, js_exc, NULL);
+
+        gchar *file = uzbl_js_to_string (jsctx, uzbl_js_get (jsctx, exc, "sourceURL"));
+        gchar *line = uzbl_js_to_string (jsctx, uzbl_js_get (jsctx, exc, "line"));
+        gchar *msg = uzbl_js_to_string (jsctx, exc);
+
+        g_debug ("Exception occured while executing script:\n %s:%s: %s\n", file, line, msg);
+
+        g_free (file);
+        g_free (line);
+        g_free (msg);
+    }
+
+    JSStringRelease (js_file);
+    JSStringRelease (js_script);
+
+    return js_result;
 }
 
 void
@@ -51,6 +83,21 @@ read_message_cb (GObject *source,
     }
 
     switch (messagetype) {
+    case EXT_RUN_JS:
+        {
+            UzblJSContext ctx;
+            gchar *path;
+            gchar *script;
+            uzbl_extio_get_message_data (EXT_RUN_JS, message, &ctx, &path, &script);
+            g_debug ("let's run some javascript %d %s %s", ctx, path, script);
+            WebKitFrame *mf = webkit_web_page_get_main_frame (ext->web_page);
+            JSGlobalContextRef jsctx = JSGlobalContextRetain(
+                webkit_frame_get_javascript_global_context (mf));
+            JSValueRef value = uzbl_js_evaluate (jsctx, script, path);
+            JSGlobalContextRelease (jsctx);
+            g_free (script);
+            break;
+        }
     default:
         {
             gchar *pmsg = g_variant_print (message, TRUE);
@@ -120,7 +167,7 @@ web_page_created_callback (WebKitWebExtension *extension,
     UzblExt *ext = (UzblExt*)user_data;
 
     g_debug ("Web page created");
-
+    ext->web_page = web_page;
     g_signal_connect (web_page, "document-loaded",
                       G_CALLBACK (document_loaded_callback), ext);
 }

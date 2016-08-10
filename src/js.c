@@ -1,5 +1,6 @@
 #include "js.h"
 #include "uzbl-core.h"
+#include "io.h"
 
 #include <stdlib.h>
 
@@ -133,6 +134,9 @@ gchar *
 uzbl_js_run_string (UzblJSContext context, const gchar *script)
 {
     gchar *result_utf8 = NULL;
+
+    uzbl_io_send_ext_message (EXT_RUN_JS, context, "(uzbl command)", script);
+    return g_strdup ("");
 
     JSGlobalContextRef jsctx = uzbl_js_get_context (context);
     JSValueRef result = uzbl_js_evaluate (jsctx, script, "(uzbl command)");

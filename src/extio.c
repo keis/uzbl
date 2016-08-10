@@ -243,6 +243,8 @@ uzbl_extio_get_variant_type (ExtIOMessageType type)
     case EXT_FOCUS:
     case EXT_BLUR:
         return G_VARIANT_TYPE ("s");
+    case EXT_RUN_JS:
+        return G_VARIANT_TYPE ("(iss)");
     }
 
     return 0;
